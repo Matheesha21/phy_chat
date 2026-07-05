@@ -2,11 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
-import { connectDB } from './config/db.js';
-import chatRoutes from './routes/chat.js';
-import lectureRoutes from './routes/lectures.js';
-import lecturerRoutes from './routes/lecturers.js';
-import hallRoutes from './routes/halls.js';
+import { connectDB } from "./src/config/db.js";
+import chatRoutes from "./src/routes/chat.js";
+import lectureRoutes from "./src/routes/lectures.js";
+import lecturerRoutes from "./src/routes/lecturers.js";
+import hallRoutes from "./src/routes/halls.js";
 
 dotenv.config();
 
