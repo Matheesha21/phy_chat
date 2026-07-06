@@ -17,7 +17,12 @@
     "sonner": "^2.0.1",
     "lucide-react": "0.522.0",
     "clsx": "latest",
-    "tailwind-merge": "latest"
+    "tailwind-merge": "latest",
+    "express": "^4.19.2",
+    "cors": "latest",
+    "dotenv": "latest",
+    "@prisma/client": "latest",
+    "@google/generative-ai": "latest"
   },
   "devDependencies": {
     "@types/node": "^20.11.18",

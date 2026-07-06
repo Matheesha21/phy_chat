@@ -2,11 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
-import { connectDB } from "./src/config/db.js";
-import chatRoutes from "./src/routes/chat.js";
-import lectureRoutes from "./src/routes/lectures.js";
-import lecturerRoutes from "./src/routes/lecturers.js";
-import hallRoutes from "./src/routes/halls.js";
+import { connectDB } from './config/db.js';
+import chatRoutes from './routes/chat.js';
+import lectureRoutes from './routes/lectures.js';
+import lecturerRoutes from './routes/lecturers.js';
+import hallRoutes from './routes/halls.js';
 
 dotenv.config();
 
@@ -16,8 +16,8 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN || '*',
-  }),
+    origin: process.env.CLIENT_ORIGIN || '*'
+  })
 );
 app.use(express.json());
 
@@ -36,18 +36,18 @@ app.use('/api/halls', hallRoutes); // GET  /api/halls
 app.use((err, _req, res, _next) => {
   console.error(err);
   res.status(err.status || 500).json({
-    error: err.message || 'Internal Server Error',
+    error: err.message || 'Internal Server Error'
   });
 });
 
 // Boot
-connectDB()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`USJ Physics Assistant API running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('Failed to start server:', err);
-    process.exit(1);
+connectDB().
+then(() => {
+  app.listen(PORT, () => {
+    console.log(`USJ Physics Assistant API running on port ${PORT}`);
   });
+}).
+catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});
