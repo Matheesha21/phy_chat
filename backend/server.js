@@ -16,8 +16,8 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN || '*',
-  }),
+    origin: process.env.CLIENT_ORIGIN || '*'
+  })
 );
 app.use(express.json());
 
@@ -36,18 +36,18 @@ app.use('/api/halls', hallRoutes); // GET  /api/halls
 app.use((err, _req, res, _next) => {
   console.error(err);
   res.status(err.status || 500).json({
-    error: err.message || 'Internal Server Error',
+    error: err.message || 'Internal Server Error'
   });
 });
 
 // Boot
-connectDB()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`USJ Physics Assistant API running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('Failed to start server:', err);
-    process.exit(1);
+connectDB().
+then(() => {
+  app.listen(PORT, () => {
+    console.log(`USJ Physics Assistant API running on port ${PORT}`);
   });
+}).
+catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});

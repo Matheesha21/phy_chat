@@ -7,4 +7,3 @@ const router = Router();
 router.post('/', postChat);
 
 export default router;
-

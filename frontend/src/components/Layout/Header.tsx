@@ -1,13 +1,61 @@
-import React from 'react';
-import { Menu, UserCircle, Moon, Sun } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import {
+  Menu,
+  UserCircle,
+  Moon,
+  Sun,
+  User,
+  Settings,
+  LogOut,
+  ChevronDown } from
+'lucide-react';
+import { toast } from 'sonner';
 import { useTheme } from '../../context/ThemeContext';
 interface HeaderProps {
   toggleSidebar: () => void;
 }
 export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   const { theme, toggleTheme } = useTheme();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  // Close on click outside
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+  // Close on Escape
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, []);
+  const menuItems = [
+  {
+    label: 'My Profile',
+    icon: User,
+    onClick: () => toast.info('Profile page is coming soon.')
+  },
+  {
+    label: 'Settings',
+    icon: Settings,
+    onClick: () => toast.info('Settings are coming soon.')
+  },
+  {
+    label: 'Sign out',
+    icon: LogOut,
+    onClick: () => toast.success('You have been signed out.'),
+    danger: true
+  }];
+
   return (
-    <header className="h-16 bg-card border-b border-border border-b-2 border-b-gold/60 flex items-center justify-between px-4 lg:px-8 z-10">
+    <header className="h-16 bg-card border-b border-border border-b-2 border-b-gold/60 flex items-center justify-between px-4 lg:px-8 z-20">
       <div className="flex items-center gap-4">
         <button
           onClick={toggleSidebar}
@@ -42,10 +90,58 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
           <Moon className="w-5 h-5" />
           }
         </button>
-        <button className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-          <UserCircle className="w-6 h-6" />
-          <span className="hidden sm:inline">Student Portal</span>
-        </button>
+
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setMenuOpen((prev) => !prev)}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-md px-1.5 py-1 hover:bg-secondary">
+            
+            <UserCircle className="w-6 h-6" />
+            <span className="hidden sm:inline">Student Portal</span>
+            <ChevronDown
+              className={`w-4 h-4 hidden sm:inline transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
+            
+          </button>
+
+          {menuOpen &&
+          <div
+            role="menu"
+            className="absolute right-0 mt-2 w-60 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-30">
+            
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <UserCircle className="w-6 h-6 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">
+                    Kasun Fernando
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    PS/2021/042 · Physics
+                  </p>
+                </div>
+              </div>
+              <div className="py-1">
+                {menuItems.map((item) =>
+              <button
+                key={item.label}
+                role="menuitem"
+                onClick={() => {
+                  item.onClick();
+                  setMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors hover:bg-secondary ${item.danger ? 'text-destructive' : 'text-foreground'}`}>
+                
+                    <item.icon className="w-4 h-4" />
+                    {item.label}
+                  </button>
+              )}
+              </div>
+            </div>
+          }
+        </div>
       </div>
     </header>);
 

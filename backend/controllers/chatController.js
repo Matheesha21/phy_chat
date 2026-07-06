@@ -16,10 +16,9 @@ export async function postChat(req, res, next) {
       id: Date.now().toString(36),
       text,
       sender: 'ai',
-      timestamp: new Date().toISOString(),
+      timestamp: new Date().toISOString()
     });
   } catch (err) {
     next(err);
   }
 }
-

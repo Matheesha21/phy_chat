@@ -7,4 +7,3 @@ const router = Router();
 router.get('/', getLecturers);
 
 export default router;
-

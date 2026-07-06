@@ -1,8 +1,8 @@
 
+
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { Lecture } from '../models/Lecture.js';
-import { Lecturer } from '../models/Lecturer.js';
-import { Hall } from '../models/Hall.js';
+import { prisma } from '../config/db.js';
+import { serializeHall } from '../lib/hallType.js';
 
 const SYSTEM_PROMPT = `You are the USJ Physics Department AI Assistant for the University of Sri Jayewardenepura.
 - Answer physics questions with simple, student-friendly explanations.
@@ -17,15 +17,15 @@ const SYSTEM_PROMPT = `You are the USJ Physics Department AI Assistant for the U
  */
 async function buildContext() {
   const [lectures, lecturers, halls] = await Promise.all([
-    Lecture.find().lean(),
-    Lecturer.find().lean(),
-    Hall.find().lean(),
-  ]);
+  prisma.lecture.findMany(),
+  prisma.lecturer.findMany(),
+  prisma.hall.findMany()]
+  );
 
   return `DEPARTMENT DATA (JSON):
 Lectures: ${JSON.stringify(lectures)}
 Lecturers: ${JSON.stringify(lecturers)}
-Halls: ${JSON.stringify(halls)}`;
+Halls: ${JSON.stringify(halls.map(serializeHall))}`;
 }
 
 export async function generateChatReply(message) {
@@ -37,15 +37,14 @@ export async function generateChatReply(message) {
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
     model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
-    systemInstruction: SYSTEM_PROMPT,
+    systemInstruction: SYSTEM_PROMPT
   });
 
   const context = await buildContext();
 
   const result = await model.generateContent(
-    `${context}\n\nStudent question: ${message}`,
+    `${context}\n\nStudent question: ${message}`
   );
 
   return result.response.text().trim();
 }
-
