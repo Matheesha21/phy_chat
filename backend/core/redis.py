@@ -1,14 +1,11 @@
 import redis
 
-from core.config import get_env, load_env
+from core.config import get_redis_url as get_configured_redis_url, load_env
 
 
 def get_redis_url() -> str:
     load_env()
-    redis_url = get_env('REDIS_URL')
-    if not redis_url:
-        raise ValueError('REDIS_URL is not set')
-    return redis_url
+    return get_configured_redis_url()
 
 
 def get_redis_client() -> redis.Redis:

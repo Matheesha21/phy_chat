@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
+from api.auth import router as auth_router
+from api.chat import router as chat_router
 from core.postgres import check_postgres_health
 from core.redis import check_redis_health
 
@@ -8,6 +10,9 @@ app = FastAPI(
     title="Physics Chatbot API",
     version="1.0.0"
 )
+
+app.include_router(auth_router)
+app.include_router(chat_router)
 
 @app.get("/")
 def root():

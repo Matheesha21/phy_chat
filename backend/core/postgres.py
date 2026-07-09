@@ -2,15 +2,12 @@ from contextlib import contextmanager
 
 import psycopg2
 
-from core.config import get_env, load_env
+from core.config import get_database_url, load_env
 
 
 def get_postgres_url() -> str:
     load_env()
-    postgres_url = get_env('POSTGRESS_DATABASE_URL') or get_env('POSTGRES_DATABASE_URL')
-    if not postgres_url:
-        raise ValueError('POSTGRESS_DATABASE_URL is not set')
-    return postgres_url
+    return get_database_url()
 
 
 @contextmanager
