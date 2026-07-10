@@ -14,14 +14,7 @@ interface ChatContextType {
 }
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 export const ChatProvider = ({ children }: {children: ReactNode;}) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-  {
-    id: 'welcome-msg',
-    text: 'Hello! I am the USJ Physics Department AI Assistant. How can I help you today?',
-    sender: 'ai',
-    timestamp: new Date()
-  }]
-  );
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const sendMessage = async (text: string) => {
     if (!text.trim()) return;
