@@ -5,6 +5,7 @@ import React, {
   ReactNode } from
 'react';
 import { ChatMessage, chatService } from '../services/chatService';
+import { ApiError } from '../services/httpClient';
 import { toast } from 'sonner';
 interface ChatContextType {
   messages: ChatMessage[];
@@ -30,13 +31,18 @@ export const ChatProvider = ({ children }: {children: ReactNode;}) => {
       sender: 'user',
       timestamp: new Date()
     };
+    const history = messages;
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
     try {
-      const aiReply = await chatService.sendMessage(text);
+      const aiReply = await chatService.sendMessage(text, history);
       setMessages((prev) => [...prev, aiReply]);
     } catch (error) {
-      toast.error('Failed to connect to the AI service. Please try again.');
+      const message =
+      error instanceof ApiError ?
+      error.message :
+      'Failed to connect to the AI service. Please try again.';
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
