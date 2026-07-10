@@ -5,6 +5,7 @@ import React, {
   ReactNode } from
 'react';
 import { ChatMessage, chatService } from '../services/chatService';
+import { ApiError } from '../services/httpClient';
 import { toast } from 'sonner';
 interface ChatContextType {
   messages: ChatMessage[];
@@ -13,14 +14,7 @@ interface ChatContextType {
 }
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 export const ChatProvider = ({ children }: {children: ReactNode;}) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-  {
-    id: 'welcome-msg',
-    text: 'Hello! I am the USJ Physics Department AI Assistant. How can I help you today?',
-    sender: 'ai',
-    timestamp: new Date()
-  }]
-  );
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const sendMessage = async (text: string) => {
     if (!text.trim()) return;
@@ -30,13 +24,18 @@ export const ChatProvider = ({ children }: {children: ReactNode;}) => {
       sender: 'user',
       timestamp: new Date()
     };
+    const history = messages;
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
     try {
-      const aiReply = await chatService.sendMessage(text);
+      const aiReply = await chatService.sendMessage(text, history);
       setMessages((prev) => [...prev, aiReply]);
     } catch (error) {
-      toast.error('Failed to connect to the AI service. Please try again.');
+      const message =
+      error instanceof ApiError ?
+      error.message :
+      'Failed to connect to the AI service. Please try again.';
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }

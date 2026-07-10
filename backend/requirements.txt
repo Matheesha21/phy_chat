@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+python-dotenv
+pydantic
+psycopg2-binary
+redis
+sqlalchemy
+alembic
+google-auth
+requests
+langchain-core
+langchain-google-genai
