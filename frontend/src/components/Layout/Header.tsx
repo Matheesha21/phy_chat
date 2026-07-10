@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Menu,
   UserCircle,
@@ -10,12 +11,15 @@ import {
   ChevronDown } from
 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 interface HeaderProps {
   toggleSidebar: () => void;
 }
 export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   // Close on click outside
@@ -36,6 +40,16 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
   }, []);
+  const handleSignOut = async () => {
+    try {
+      await logout();
+      toast.success('You have been signed out.');
+      navigate('/login', { replace: true });
+    } catch {
+      toast.error('Failed to sign out. Please try again.');
+    }
+  };
+
   const menuItems = [
   {
     label: 'My Profile',
@@ -50,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   {
     label: 'Sign out',
     icon: LogOut,
-    onClick: () => toast.success('You have been signed out.'),
+    onClick: handleSignOut,
     danger: true
   }];
 
@@ -98,8 +112,17 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
             aria-expanded={menuOpen}
             className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-md px-1.5 py-1 hover:bg-secondary">
             
+            {user?.picture_url ?
+            <img
+              src={user.picture_url}
+              alt=""
+              className="w-6 h-6 rounded-full object-cover" /> :
+
             <UserCircle className="w-6 h-6" />
-            <span className="hidden sm:inline">Student Portal</span>
+            }
+            <span className="hidden sm:inline truncate max-w-[10rem]">
+              {user?.full_name || user?.email || 'Account'}
+            </span>
             <ChevronDown
               className={`w-4 h-4 hidden sm:inline transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
             
@@ -111,15 +134,22 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
             className="absolute right-0 mt-2 w-60 bg-card border border-border rounded-xl shadow-lg overflow-hidden z-30">
             
               <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <UserCircle className="w-6 h-6 text-primary" />
-                </div>
+                {user?.picture_url ?
+              <img
+                src={user.picture_url}
+                alt=""
+                className="w-10 h-10 rounded-full object-cover flex-shrink-0" /> :
+
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <UserCircle className="w-6 h-6 text-primary" />
+                  </div>
+              }
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-foreground truncate">
-                    Kasun Fernando
+                    {user?.full_name || 'Signed in'}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
-                    PS/2021/042 · Physics
+                    {user?.email}
                   </p>
                 </div>
               </div>
