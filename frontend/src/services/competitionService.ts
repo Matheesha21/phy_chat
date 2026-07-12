@@ -112,30 +112,31 @@ interface AnswerResponseDto {
 
 export interface LeaderboardEntry {
   rank: number
-  username: string
+  userId: number
+  displayName: string
   correctAnswers: number
   wrongAnswers: number
-  marks: number
+  score: number
 }
 
 interface LeaderboardEntryDto {
   rank: number
-  username: string
+  user_id: number
+  full_name: string | null
+  email: string
   correct_answers: number
   wrong_answers: number
-  marks: number
-}
-
-interface LeaderboardResponseDto {
-  leaderboard: LeaderboardEntryDto[]
+  total_time_seconds: number
+  score: number
 }
 
 const toLeaderboardEntry = (dto: LeaderboardEntryDto): LeaderboardEntry => ({
   rank: dto.rank,
-  username: dto.username,
+  userId: dto.user_id,
+  displayName: dto.full_name ?? dto.email,
   correctAnswers: dto.correct_answers,
   wrongAnswers: dto.wrong_answers,
-  marks: dto.marks,
+  score: dto.score,
 })
 
 export const competitionService = {
@@ -193,10 +194,10 @@ export const competitionService = {
     }
   },
 
-  async getLeaderboard(limit = 50): Promise<LeaderboardEntry[]> {
-    const result = await httpClient.get<LeaderboardResponseDto>(
-      `/leaderboard?limit=${limit}`,
+  async getLeaderboard(): Promise<LeaderboardEntry[]> {
+    const result = await httpClient.get<LeaderboardEntryDto[]>(
+      '/leaderboard/',
     )
-    return result.leaderboard.map(toLeaderboardEntry)
+    return result.map(toLeaderboardEntry)
   },
 }
