@@ -20,7 +20,7 @@ export function LeaderboardPage() {
   const loadLeaderboard = async () => {
     setStatus('loading')
     try {
-      setEntries(await competitionService.getLeaderboard())
+      setEntries(await competitionService.getLeaderboard(50))
       setStatus('ready')
     } catch {
       setStatus('error')
@@ -29,7 +29,6 @@ export function LeaderboardPage() {
   useEffect(() => {
     void loadLeaderboard()
   }, [])
-  const currentStudent = entries.find((entry) => entry.isCurrentStudent)
   return (
     <div className="min-h-full w-full bg-background">
       <div className="mx-auto max-w-5xl px-4 py-7 sm:px-6 lg:px-8 lg:py-10">
@@ -43,19 +42,9 @@ export function LeaderboardPage() {
               Leaderboard
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-              Cumulative points earned across Physics Challenge Arena quizzes.
+              Cumulative marks earned across Physics Challenge Arena quizzes.
             </p>
           </div>
-          {currentStudent && (
-            <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Your standing
-              </p>
-              <p className="mt-1 text-sm font-bold text-foreground">
-                Rank #{currentStudent.rank} · {currentStudent.points} pts
-              </p>
-            </div>
-          )}
         </header>
 
         {status === 'loading' && (
@@ -110,17 +99,18 @@ export function LeaderboardPage() {
             className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
             aria-label="Ranked students"
           >
-            <div className="hidden grid-cols-[80px_1fr_120px_105px] gap-4 border-b border-border bg-secondary/50 px-5 py-3 text-xs font-bold uppercase tracking-wide text-muted-foreground sm:grid">
+            <div className="hidden grid-cols-[80px_1fr_90px_90px_105px] gap-4 border-b border-border bg-secondary/50 px-5 py-3 text-xs font-bold uppercase tracking-wide text-muted-foreground sm:grid">
               <span>Rank</span>
               <span>Student</span>
-              <span className="text-right">Quizzes</span>
-              <span className="text-right">Points</span>
+              <span className="text-right">Correct</span>
+              <span className="text-right">Wrong</span>
+              <span className="text-right">Marks</span>
             </div>
             <ol>
               {entries.map((entry) => (
                 <li
-                  key={entry.studentId}
-                  className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-border p-4 last:border-0 sm:grid-cols-[80px_1fr_120px_105px] sm:gap-4 sm:px-5 ${entry.isCurrentStudent ? 'bg-primary/5' : ''}`}
+                  key={entry.rank}
+                  className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-border p-4 last:border-0 sm:grid-cols-[80px_1fr_90px_90px_105px] sm:gap-4 sm:px-5"
                 >
                   <div className="flex items-center gap-3">
                     <span
@@ -133,25 +123,18 @@ export function LeaderboardPage() {
                     </span>
                   </div>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-bold text-foreground">
-                        {entry.studentName}
-                      </p>
-                      {entry.isCurrentStudent && (
-                        <span className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">
-                          You
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {entry.studentId}
+                    <p className="truncate text-sm font-bold text-foreground">
+                      {entry.username}
                     </p>
                   </div>
                   <p className="hidden text-right text-sm text-muted-foreground sm:block">
-                    {entry.quizzesCompleted}
+                    {entry.correctAnswers}
+                  </p>
+                  <p className="hidden text-right text-sm text-muted-foreground sm:block">
+                    {entry.wrongAnswers}
                   </p>
                   <p className="text-right text-sm font-bold text-foreground">
-                    {entry.points}{' '}
+                    {entry.marks}{' '}
                     <span className="text-xs font-medium text-muted-foreground">
                       pts
                     </span>
@@ -163,7 +146,7 @@ export function LeaderboardPage() {
         )}
 
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          Points update when a quiz is completed.
+          Marks update when a quiz is completed.
         </p>
       </div>
     </div>
