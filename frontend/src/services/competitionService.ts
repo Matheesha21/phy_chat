@@ -7,12 +7,6 @@ export interface PhysicsModule {
   name: string
 }
 
-export interface CareerPath {
-  id: string
-  label: string
-  description: string
-}
-
 export const PHYSICS_MODULES: Record<StudyYear, PhysicsModule[]> = {
   1: [
     { code: 'PHY 1032', name: 'Mechanics' },
@@ -58,60 +52,28 @@ export const PHYSICS_MODULES: Record<StudyYear, PhysicsModule[]> = {
   ],
 }
 
-export const CAREER_PATHS: CareerPath[] = [
-  {
-    id: 'research-physicist',
-    label: 'Research Physicist',
-    description: 'Great for academic passion',
-  },
-  {
-    id: 'medical-physicist',
-    label: 'Medical Physicist',
-    description: 'Apply physics to healthcare and diagnostics',
-  },
-  {
-    id: 'renewable-energy-engineer',
-    label: 'Renewable Energy Engineer',
-    description: 'Design and improve sustainable energy systems',
-  },
-  {
-    id: 'accelerator-particle-physicist',
-    label: 'Accelerator or Particle Physicist',
-    description: 'Explore the fundamental building blocks of matter',
-  },
-  {
-    id: 'space-aerospace-scientist',
-    label: 'Space Scientist / Aerospace Engineer',
-    description: 'Study and build for space and flight',
-  },
-  {
-    id: 'semiconductor-physicist',
-    label: 'Semiconductor Physicist',
-    description: 'Work on the materials behind modern electronics',
-  },
-  {
-    id: 'data-computational-physicist',
-    label: 'Data Scientist / Computational Physicist',
-    description: 'Model and simulate physical systems with data',
-  },
-]
-
 const MAX_SELECTABLE_MODULES = 5
 
 export interface SaveProfileRequest {
   year: StudyYear
   interestedModules: string[]
-  careerGoal: string
+  description?: string | null
 }
 
 export interface SaveProfileResult {
-  message: string
-  profileId: number
+  id: number
+  userId: number
+  studyYear: number
+  interestModules: string[]
+  description: string | null
 }
 
-interface SaveProfileResponseDto {
-  message: string
-  profile_id: number
+interface ProfileResponseDto {
+  id: number
+  user_id: number
+  study_year: number
+  interest_modules: string[]
+  description: string | null
 }
 
 export interface QuizQuestion {
@@ -178,12 +140,18 @@ export const competitionService = {
   maxSelectableModules: MAX_SELECTABLE_MODULES,
 
   async saveProfile(profile: SaveProfileRequest): Promise<SaveProfileResult> {
-    const result = await httpClient.post<SaveProfileResponseDto>('/profile', {
-      year: profile.year,
-      interested_modules: profile.interestedModules,
-      career_goal: profile.careerGoal,
+    const result = await httpClient.post<ProfileResponseDto>('/profile/', {
+      study_year: profile.year,
+      interest_modules: profile.interestedModules,
+      description: profile.description ?? null,
     })
-    return { message: result.message, profileId: result.profile_id }
+    return {
+      id: result.id,
+      userId: result.user_id,
+      studyYear: result.study_year,
+      interestModules: result.interest_modules,
+      description: result.description,
+    }
   },
 
   async generateQuestion(): Promise<QuizQuestion> {

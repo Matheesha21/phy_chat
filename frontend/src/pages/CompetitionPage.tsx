@@ -3,10 +3,11 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   AwardIcon,
-  BriefcaseIcon,
   CheckCircle2Icon,
   CircleIcon,
+  ClockIcon,
   GraduationCapIcon,
+  ListChecksIcon,
   LoaderCircleIcon,
   RotateCcwIcon,
   TargetIcon,
@@ -17,17 +18,15 @@ import {
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
 import {
-  CAREER_PATHS,
   competitionService,
   PHYSICS_MODULES,
-  type CareerPath,
   type PhysicsModule,
   type QuizQuestion,
   type StudyYear,
 } from '../services/competitionService'
 import { useScreenInit } from '../useScreenInit.js'
 
-type CompetitionStep = 'year' | 'modules' | 'career' | 'quiz' | 'complete'
+type CompetitionStep = 'year' | 'modules' | 'rules' | 'quiz' | 'complete'
 
 interface CompetitionScreenState {
   step?: CompetitionStep
@@ -95,7 +94,7 @@ const studyYears: {
   },
 ]
 
-const stepOrder: CompetitionStep[] = ['year', 'modules', 'career', 'quiz']
+const stepOrder: CompetitionStep[] = ['year', 'modules', 'quiz']
 
 export function CompetitionPage() {
   const { user } = useAuth()
@@ -103,7 +102,7 @@ export function CompetitionPage() {
   const screenInit = useScreenInit() as CompetitionScreenState
   const initialStep: CompetitionStep =
     screenInit.step &&
-    ['year', 'modules', 'career', 'quiz', 'complete'].includes(
+    ['year', 'modules', 'rules', 'quiz', 'complete'].includes(
       screenInit.step,
     )
       ? screenInit.step
@@ -118,9 +117,6 @@ export function CompetitionPage() {
     initialYear,
   )
   const [selectedModules, setSelectedModules] = useState<string[]>([])
-  const [selectedCareer, setSelectedCareer] = useState<CareerPath | null>(
-    null,
-  )
   const [isSavingProfile, setIsSavingProfile] = useState(false)
 
   const [dailyCount, setDailyCount] = useState(readDailyCount)
@@ -196,14 +192,6 @@ export function CompetitionPage() {
     setStep('modules')
   }
 
-  const confirmModules = () => {
-    if (!selectedModules.length) {
-      toast.error('Choose at least one module to continue.')
-      return
-    }
-    setStep('career')
-  }
-
   const fetchNextQuestion = async () => {
     setIsLoading(true)
     try {
@@ -220,24 +208,30 @@ export function CompetitionPage() {
     }
   }
 
-  const chooseCareerAndStart = async (career: CareerPath) => {
+  const confirmModules = async () => {
+    if (!selectedModules.length) {
+      toast.error('Choose at least one module to continue.')
+      return
+    }
     if (!selectedYear) return
-    setSelectedCareer(career)
     setIsSavingProfile(true)
     try {
       await competitionService.saveProfile({
         year: selectedYear,
         interestedModules: selectedModules,
-        careerGoal: career.id,
       })
-      setSessionStats({ answered: 0, correct: 0 })
-      setStep('quiz')
-      await fetchNextQuestion()
+      setStep('rules')
     } catch {
       toast.error('Your preferences could not be saved. Please try again.')
     } finally {
       setIsSavingProfile(false)
     }
+  }
+
+  const startCompetition = () => {
+    setSessionStats({ answered: 0, correct: 0 })
+    setStep('quiz')
+    void fetchNextQuestion()
   }
 
   const applyAnswerOutcome = (correct: boolean) => {
@@ -298,7 +292,6 @@ export function CompetitionPage() {
 
   const resetCompetition = () => {
     setSelectedModules([])
-    setSelectedCareer(null)
     setCurrentQuestion(null)
     setSelectedOption(null)
     setIsSubmitted(false)
@@ -307,7 +300,7 @@ export function CompetitionPage() {
   }
 
   const activeStepIndex = stepOrder.indexOf(
-    step === 'complete' ? 'quiz' : step,
+    step === 'complete' || step === 'rules' ? 'quiz' : step,
   )
 
   return (
@@ -343,14 +336,13 @@ export function CompetitionPage() {
         </header>
 
         <ol
-          className="mb-8 grid grid-cols-4 gap-2"
+          className="mb-8 grid grid-cols-3 gap-2"
           aria-label="Competition progress"
         >
           {[
             ['1', 'Year'],
             ['2', 'Modules'],
-            ['3', 'Career'],
-            ['4', 'Quiz'],
+            ['3', 'Quiz'],
           ].map(([number, label], index) => {
             const complete = index < activeStepIndex
             const active = index === activeStepIndex
@@ -366,7 +358,7 @@ export function CompetitionPage() {
                 >
                   {label}
                 </span>
-                {index < 3 && (
+                {index < 2 && (
                   <span
                     className="ml-auto h-px flex-1 bg-border"
                     aria-hidden="true"
@@ -477,19 +469,31 @@ export function CompetitionPage() {
             <div className="mt-7 flex justify-end">
               <button
                 type="button"
-                disabled={!selectedModules.length}
-                onClick={confirmModules}
+                disabled={!selectedModules.length || isSavingProfile}
+                onClick={() => void confirmModules()}
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                Continue
-                <ArrowRightIcon className="h-4 w-4" />
+                {isSavingProfile ? (
+                  <>
+                    <LoaderCircleIcon className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    Continue
+                    <ArrowRightIcon className="h-4 w-4" />
+                  </>
+                )}
               </button>
             </div>
           </section>
         )}
 
-        {step === 'career' && (
-          <section aria-labelledby="career-heading">
+        {step === 'rules' && (
+          <section
+            className="mx-auto max-w-2xl"
+            aria-labelledby="rules-heading"
+          >
             <button
               type="button"
               onClick={() => setStep('modules')}
@@ -498,44 +502,56 @@ export function CompetitionPage() {
               <ArrowLeftIcon className="h-4 w-4" />
               Change modules
             </button>
-            <div className="mb-6">
-              <h3
-                id="career-heading"
-                className="text-xl font-bold text-foreground"
-              >
-                What's your favorite career in the field of physics?
-              </h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                This helps us personalize your quiz questions.
+            <div className="rounded-2xl border border-border bg-card p-6 text-center shadow-sm sm:p-10">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gold/20 text-primary">
+                <ListChecksIcon className="h-6 w-6" />
+              </span>
+              <p className="mt-5 text-xs font-bold uppercase tracking-[0.16em] text-primary">
+                Before you begin
               </p>
-            </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {CAREER_PATHS.map((career) => (
-                <button
-                  key={career.id}
-                  type="button"
-                  disabled={isSavingProfile}
-                  onClick={() => void chooseCareerAndStart(career)}
-                  className="group rounded-xl border border-border bg-card p-5 text-left shadow-sm transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  <div className="mb-4 flex items-center justify-between">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                      <BriefcaseIcon className="h-5 w-5" />
-                    </span>
-                    {isSavingProfile && selectedCareer?.id === career.id ? (
-                      <LoaderCircleIcon className="h-5 w-5 animate-spin text-primary" />
-                    ) : (
-                      <ArrowRightIcon className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
-                    )}
-                  </div>
-                  <h4 className="font-bold text-foreground">
-                    {career.label}
-                  </h4>
-                  <p className="mt-1 text-sm leading-5 text-muted-foreground">
-                    {career.description}
-                  </p>
-                </button>
-              ))}
+              <h3
+                id="rules-heading"
+                className="mt-2 text-2xl font-bold text-foreground"
+              >
+                Competition rules
+              </h3>
+              <ul className="mx-auto mt-7 max-w-md space-y-4 text-left text-sm text-foreground">
+                <li className="flex items-start gap-3">
+                  <ListChecksIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <span>
+                    You'll get up to {DAILY_QUESTION_LIMIT} personalized
+                    questions per day, generated from your selected modules.
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <ClockIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <span>
+                    Each question gives you {QUESTION_SECONDS} seconds to
+                    answer before it's marked as unanswered.
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <TargetIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <span>
+                    Correct answers earn points, and answering faster earns
+                    more. Wrong or missed answers earn none.
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <TrophyIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <span>
+                    Your total score is added to the department leaderboard.
+                  </span>
+                </li>
+              </ul>
+              <button
+                type="button"
+                onClick={startCompetition}
+                className="mx-auto mt-8 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                Start your competition
+                <ArrowRightIcon className="h-4 w-4" />
+              </button>
             </div>
           </section>
         )}
@@ -548,7 +564,7 @@ export function CompetitionPage() {
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
-                  {selectedCareer?.label}
+                  {studyYears.find((year) => year.value === selectedYear)?.label}
                 </p>
                 <p className="mt-1 text-sm font-medium text-muted-foreground">
                   Question {sessionStats.answered + 1} of today's{' '}
