@@ -9,6 +9,7 @@ import {
   GraduationCapIcon,
   ListChecksIcon,
   LoaderCircleIcon,
+  PenLineIcon,
   RotateCcwIcon,
   TargetIcon,
   TimerIcon,
@@ -26,7 +27,13 @@ import {
 } from '../services/competitionService'
 import { useScreenInit } from '../useScreenInit.js'
 
-type CompetitionStep = 'year' | 'modules' | 'rules' | 'quiz' | 'complete'
+type CompetitionStep =
+  | 'year'
+  | 'modules'
+  | 'interests'
+  | 'rules'
+  | 'quiz'
+  | 'complete'
 
 interface CompetitionScreenState {
   step?: CompetitionStep
@@ -36,6 +43,7 @@ interface CompetitionScreenState {
 const QUESTION_SECONDS = 30
 const DAILY_QUESTION_LIMIT = 10
 const DAILY_LIMIT_STORAGE_KEY = 'phy_chat_quiz_daily'
+const DESCRIPTION_MAX_LENGTH = 500
 
 function moduleLabel(module: PhysicsModule): string {
   return `${module.code} ${module.name}`
@@ -94,7 +102,7 @@ const studyYears: {
   },
 ]
 
-const stepOrder: CompetitionStep[] = ['year', 'modules', 'quiz']
+const stepOrder: CompetitionStep[] = ['year', 'modules', 'interests', 'quiz']
 
 export function CompetitionPage() {
   const { user } = useAuth()
@@ -102,7 +110,7 @@ export function CompetitionPage() {
   const screenInit = useScreenInit() as CompetitionScreenState
   const initialStep: CompetitionStep =
     screenInit.step &&
-    ['year', 'modules', 'rules', 'quiz', 'complete'].includes(
+    ['year', 'modules', 'interests', 'rules', 'quiz', 'complete'].includes(
       screenInit.step,
     )
       ? screenInit.step
@@ -117,6 +125,7 @@ export function CompetitionPage() {
     initialYear,
   )
   const [selectedModules, setSelectedModules] = useState<string[]>([])
+  const [description, setDescription] = useState('')
   const [isSavingProfile, setIsSavingProfile] = useState(false)
 
   const [dailyCount, setDailyCount] = useState(readDailyCount)
@@ -208,17 +217,22 @@ export function CompetitionPage() {
     }
   }
 
-  const confirmModules = async () => {
+  const goToInterests = () => {
     if (!selectedModules.length) {
       toast.error('Choose at least one module to continue.')
       return
     }
+    setStep('interests')
+  }
+
+  const confirmProfile = async () => {
     if (!selectedYear) return
     setIsSavingProfile(true)
     try {
       await competitionService.saveProfile({
         year: selectedYear,
         interestedModules: selectedModules,
+        description: description.trim() || null,
       })
       setStep('rules')
     } catch {
@@ -292,6 +306,7 @@ export function CompetitionPage() {
 
   const resetCompetition = () => {
     setSelectedModules([])
+    setDescription('')
     setCurrentQuestion(null)
     setSelectedOption(null)
     setIsSubmitted(false)
@@ -336,13 +351,14 @@ export function CompetitionPage() {
         </header>
 
         <ol
-          className="mb-8 grid grid-cols-3 gap-2"
+          className="mb-8 grid grid-cols-4 gap-2"
           aria-label="Competition progress"
         >
           {[
             ['1', 'Year'],
             ['2', 'Modules'],
-            ['3', 'Quiz'],
+            ['3', 'Interests'],
+            ['4', 'Quiz'],
           ].map(([number, label], index) => {
             const complete = index < activeStepIndex
             const active = index === activeStepIndex
@@ -358,7 +374,7 @@ export function CompetitionPage() {
                 >
                   {label}
                 </span>
-                {index < 2 && (
+                {index < 3 && (
                   <span
                     className="ml-auto h-px flex-1 bg-border"
                     aria-hidden="true"
@@ -469,8 +485,66 @@ export function CompetitionPage() {
             <div className="mt-7 flex justify-end">
               <button
                 type="button"
-                disabled={!selectedModules.length || isSavingProfile}
-                onClick={() => void confirmModules()}
+                disabled={!selectedModules.length}
+                onClick={goToInterests}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                Continue
+                <ArrowRightIcon className="h-4 w-4" />
+              </button>
+            </div>
+          </section>
+        )}
+
+        {step === 'interests' && (
+          <section
+            className="mx-auto max-w-2xl"
+            aria-labelledby="interests-heading"
+          >
+            <button
+              type="button"
+              onClick={() => setStep('modules')}
+              className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ArrowLeftIcon className="h-4 w-4" />
+              Change modules
+            </button>
+            <div className="mb-6 flex items-start gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <PenLineIcon className="h-5 w-5" />
+              </span>
+              <div>
+                <h3
+                  id="interests-heading"
+                  className="text-xl font-bold text-foreground"
+                >
+                  What area of physics interests you most?
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Tell us about your interests or career goals — we'll use
+                  this to personalize your quiz questions. This is optional.
+                </p>
+              </div>
+            </div>
+            <textarea
+              value={description}
+              onChange={(event) =>
+                setDescription(
+                  event.target.value.slice(0, DESCRIPTION_MAX_LENGTH),
+                )
+              }
+              rows={5}
+              placeholder="e.g. I'm fascinated by astrophysics and hope to work on space missions one day..."
+              className="w-full resize-none rounded-xl border border-border bg-card p-4 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            />
+            <p className="mt-1.5 text-right text-xs text-muted-foreground">
+              {description.length}/{DESCRIPTION_MAX_LENGTH}
+            </p>
+            <div className="mt-7 flex justify-end">
+              <button
+                type="button"
+                disabled={isSavingProfile}
+                onClick={() => void confirmProfile()}
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 {isSavingProfile ? (
@@ -496,11 +570,11 @@ export function CompetitionPage() {
           >
             <button
               type="button"
-              onClick={() => setStep('modules')}
+              onClick={() => setStep('interests')}
               className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <ArrowLeftIcon className="h-4 w-4" />
-              Change modules
+              Edit interests
             </button>
             <div className="rounded-2xl border border-border bg-card p-6 text-center shadow-sm sm:p-10">
               <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gold/20 text-primary">
