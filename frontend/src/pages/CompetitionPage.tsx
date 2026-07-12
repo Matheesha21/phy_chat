@@ -139,11 +139,13 @@ export function CompetitionPage() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [feedback, setFeedback] = useState<{
     correct: boolean
-    correctAnswer: string
+    correctOptionIndex: number
+    scoreAwarded: number
   } | null>(null)
   const [sessionStats, setSessionStats] = useState({
     answered: 0,
     correct: 0,
+    score: 0,
   })
   const [isLoading, setIsLoading] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -243,18 +245,19 @@ export function CompetitionPage() {
   }
 
   const startCompetition = () => {
-    setSessionStats({ answered: 0, correct: 0 })
+    setSessionStats({ answered: 0, correct: 0, score: 0 })
     setStep('quiz')
     void fetchNextQuestion()
   }
 
-  const applyAnswerOutcome = (correct: boolean) => {
+  const applyAnswerOutcome = (correct: boolean, scoreAwarded: number) => {
     const nextDailyCount = dailyCount + 1
     setDailyCount(nextDailyCount)
     writeDailyCount(nextDailyCount)
     setSessionStats((previous) => ({
       answered: previous.answered + 1,
       correct: previous.correct + (correct ? 1 : 0),
+      score: previous.score + scoreAwarded,
     }))
     if (nextDailyCount >= DAILY_QUESTION_LIMIT) {
       setTimeout(() => setStep('complete'), 1500)
@@ -265,19 +268,19 @@ export function CompetitionPage() {
     if (!currentQuestion || selectedOption === null || isSubmitted) return
     setIsSubmitted(true)
     setIsLoading(true)
-    const selectedAnswer = String.fromCharCode(65 + selectedOption)
-    const timeTaken = QUESTION_SECONDS - timeLeft
+    const timeTakenSeconds = QUESTION_SECONDS - timeLeft
     try {
       const result = await competitionService.submitAnswer({
-        questionId: currentQuestion.id,
-        selectedAnswer,
-        timeTaken,
+        quizId: currentQuestion.id,
+        selectedOptionIndex: selectedOption,
+        timeTakenSeconds,
       })
       setFeedback({
-        correct: result.correct,
-        correctAnswer: result.correctAnswer,
+        correct: result.isCorrect,
+        correctOptionIndex: result.correctOptionIndex,
+        scoreAwarded: result.scoreAwarded,
       })
-      applyAnswerOutcome(result.correct)
+      applyAnswerOutcome(result.isCorrect, result.scoreAwarded)
     } catch {
       toast.error('Your answer could not be submitted. Please try again.')
       setIsSubmitted(false)
@@ -288,8 +291,8 @@ export function CompetitionPage() {
 
   const recordUnansweredTimeout = () => {
     setIsSubmitted(true)
-    setFeedback({ correct: false, correctAnswer: '' })
-    applyAnswerOutcome(false)
+    setFeedback({ correct: false, correctOptionIndex: -1, scoreAwarded: 0 })
+    applyAnswerOutcome(false, 0)
   }
 
   const nextQuestion = () => {
@@ -350,40 +353,46 @@ export function CompetitionPage() {
           </div>
         </header>
 
-        <ol
-          className="mb-8 grid grid-cols-4 gap-2"
-          aria-label="Competition progress"
-        >
-          {[
-            ['1', 'Year'],
-            ['2', 'Modules'],
-            ['3', 'Interests'],
-            ['4', 'Quiz'],
-          ].map(([number, label], index) => {
-            const complete = index < activeStepIndex
-            const active = index === activeStepIndex
-            return (
-              <li key={label} className="flex items-center gap-2">
-                <span
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${complete || active ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}
-                >
-                  {complete ? <CheckCircle2Icon className="h-4 w-4" /> : number}
-                </span>
-                <span
-                  className={`text-sm font-semibold ${index <= activeStepIndex ? 'text-foreground' : 'text-muted-foreground'}`}
-                >
-                  {label}
-                </span>
-                {index < 3 && (
+        {step !== 'quiz' && (
+          <ol
+            className="mb-8 grid grid-cols-4 gap-2"
+            aria-label="Competition progress"
+          >
+            {[
+              ['1', 'Year'],
+              ['2', 'Modules'],
+              ['3', 'Interests'],
+              ['4', 'Quiz'],
+            ].map(([number, label], index) => {
+              const complete = index < activeStepIndex
+              const active = index === activeStepIndex
+              return (
+                <li key={label} className="flex items-center gap-2">
                   <span
-                    className="ml-auto h-px flex-1 bg-border"
-                    aria-hidden="true"
-                  />
-                )}
-              </li>
-            )
-          })}
-        </ol>
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${complete || active ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}
+                  >
+                    {complete ? (
+                      <CheckCircle2Icon className="h-4 w-4" />
+                    ) : (
+                      number
+                    )}
+                  </span>
+                  <span
+                    className={`text-sm font-semibold ${index <= activeStepIndex ? 'text-foreground' : 'text-muted-foreground'}`}
+                  >
+                    {label}
+                  </span>
+                  {index < 3 && (
+                    <span
+                      className="ml-auto h-px flex-1 bg-border"
+                      aria-hidden="true"
+                    />
+                  )}
+                </li>
+              )
+            })}
+          </ol>
+        )}
 
         {dailyRemaining <= 0 && step !== 'complete' && (
           <div className="mb-6 rounded-xl border border-gold/40 bg-gold/10 p-4 text-sm font-semibold text-foreground">
@@ -654,7 +663,7 @@ export function CompetitionPage() {
                 </div>
                 <div className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-bold text-foreground">
                   <span className="text-muted-foreground">Score </span>
-                  {sessionStats.correct} pts
+                  {sessionStats.score} pts
                 </div>
               </div>
             </div>
@@ -676,7 +685,7 @@ export function CompetitionPage() {
                     id="question-heading"
                     className="pt-1 text-xl font-bold leading-8 text-foreground"
                   >
-                    {currentQuestion.text}
+                    {currentQuestion.question}
                   </h3>
                 </div>
 
@@ -688,12 +697,12 @@ export function CompetitionPage() {
                   {currentQuestion.options.map((option, index) => {
                     const letter = String.fromCharCode(65 + index)
                     const chosen = selectedOption === index
-                    const isCorrectLetter =
+                    const isCorrectOption =
                       isSubmitted &&
-                      feedback?.correctAnswer &&
-                      feedback.correctAnswer === letter
+                      feedback !== null &&
+                      feedback.correctOptionIndex === index
                     const answerClass = isSubmitted
-                      ? isCorrectLetter
+                      ? isCorrectOption
                         ? 'border-green-600 bg-green-50 text-green-900 dark:bg-green-950/30 dark:text-green-100'
                         : chosen
                           ? 'border-destructive bg-destructive/5 text-foreground'
@@ -712,15 +721,15 @@ export function CompetitionPage() {
                         className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left text-sm font-medium transition-colors disabled:cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${answerClass}`}
                       >
                         <span
-                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${isCorrectLetter ? 'border-green-600 bg-green-600 text-white' : chosen ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground'}`}
+                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${isCorrectOption ? 'border-green-600 bg-green-600 text-white' : chosen ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground'}`}
                         >
                           {letter}
                         </span>
                         <span>{option}</span>
-                        {isCorrectLetter && (
+                        {isCorrectOption && (
                           <CheckCircle2Icon className="ml-auto h-5 w-5 text-green-600" />
                         )}
-                        {isSubmitted && chosen && !isCorrectLetter && (
+                        {isSubmitted && chosen && !isCorrectOption && (
                           <XCircleIcon className="ml-auto h-5 w-5 text-destructive" />
                         )}
                       </button>
@@ -735,7 +744,7 @@ export function CompetitionPage() {
                   >
                     <p className="font-bold">
                       {feedback.correct
-                        ? 'Correct — +1 point'
+                        ? `Correct — +${feedback.scoreAwarded} pts`
                         : selectedOption === null
                           ? "Time's up"
                           : 'Not quite'}
@@ -759,7 +768,7 @@ export function CompetitionPage() {
                       disabled={selectedOption === null || isLoading}
                       className="rounded-lg bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
-                      Submit answer
+                      Check answer
                     </button>
                   ) : (
                     dailyRemaining > 0 && (
@@ -808,7 +817,7 @@ export function CompetitionPage() {
                   This session
                 </p>
                 <p className="mt-1 text-2xl font-bold text-foreground">
-                  {sessionStats.correct} <span className="text-sm">pts</span>
+                  {sessionStats.score} <span className="text-sm">pts</span>
                 </p>
               </div>
               <div className="p-5">

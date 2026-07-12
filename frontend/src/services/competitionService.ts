@@ -78,34 +78,36 @@ interface ProfileResponseDto {
 
 export interface QuizQuestion {
   id: number
-  text: string
+  topic: string | null
+  question: string
   options: string[]
 }
 
-interface GenerateQuestionResponseDto {
-  question: {
-    id: number
-    text: string
-    options: string[]
-  }
+interface QuizQuestionDto {
+  id: number
+  topic: string | null
+  question: string
+  options: string[]
 }
 
 export interface AnswerSubmission {
-  questionId: number
-  selectedAnswer: string
-  timeTaken: number
+  quizId: number
+  selectedOptionIndex: number
+  timeTakenSeconds: number
 }
 
 export interface AnswerResult {
-  correct: boolean
-  correctAnswer: string
-  currentScore: number
+  quizId: number
+  isCorrect: boolean
+  correctOptionIndex: number
+  scoreAwarded: number
 }
 
 interface AnswerResponseDto {
-  correct: boolean
-  correct_answer: string
-  current_score: number
+  quiz_id: number
+  is_correct: boolean
+  correct_option_index: number
+  score_awarded: number
 }
 
 export interface LeaderboardEntry {
@@ -155,28 +157,28 @@ export const competitionService = {
   },
 
   async generateQuestion(): Promise<QuizQuestion> {
-    const result =
-      await httpClient.post<GenerateQuestionResponseDto>('/quiz/generate')
+    const result = await httpClient.post<QuizQuestionDto>('/quiz/generate')
     return {
-      id: result.question.id,
-      text: result.question.text,
-      options: result.question.options,
+      id: result.id,
+      topic: result.topic,
+      question: result.question,
+      options: result.options,
     }
   },
 
   async submitAnswer(submission: AnswerSubmission): Promise<AnswerResult> {
     const result = await httpClient.post<AnswerResponseDto>(
-      `/quiz/${submission.questionId}/answer`,
+      `/quiz/${submission.quizId}/answer`,
       {
-        question_id: submission.questionId,
-        selected_answer: submission.selectedAnswer,
-        time_taken: submission.timeTaken,
+        selected_option_index: submission.selectedOptionIndex,
+        time_taken_seconds: submission.timeTakenSeconds,
       },
     )
     return {
-      correct: result.correct,
-      correctAnswer: result.correct_answer,
-      currentScore: result.current_score,
+      quizId: result.quiz_id,
+      isCorrect: result.is_correct,
+      correctOptionIndex: result.correct_option_index,
+      scoreAwarded: result.score_awarded,
     }
   },
 
