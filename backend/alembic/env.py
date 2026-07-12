@@ -6,7 +6,7 @@ from sqlalchemy import engine_from_config, pool
 
 from core.config import get_database_url, load_env
 from core.database import Base
-from models import user  # noqa: F401
+from models import quiz_attempt, user  # noqa: F401
 
 
 config = context.config
