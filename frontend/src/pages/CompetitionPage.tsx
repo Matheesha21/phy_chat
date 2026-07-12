@@ -105,7 +105,7 @@ const studyYears: {
 const stepOrder: CompetitionStep[] = ['year', 'modules', 'interests', 'quiz']
 
 export function CompetitionPage() {
-  const { user } = useAuth()
+  const { user, isLoading: isAuthLoading } = useAuth()
   const firstName = user?.full_name?.split(' ')[0] || 'there'
   const screenInit = useScreenInit() as CompetitionScreenState
   const initialStep: CompetitionStep =
@@ -148,9 +148,46 @@ export function CompetitionPage() {
     score: 0,
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [isBootstrapping, setIsBootstrapping] = useState(!screenInit.step)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const modules = selectedYear ? PHYSICS_MODULES[selectedYear] : []
+
+  useEffect(() => {
+    if (screenInit.step) return
+    if (isAuthLoading) return
+    if (!user?.has_completed_competition_onboarding) {
+      setIsBootstrapping(false)
+      return
+    }
+
+    let cancelled = false
+    competitionService
+      .getProfile()
+      .then((profile) => {
+        if (cancelled) return
+        const validYear = ([1, 2, 3, 4] as number[]).includes(
+          profile.studyYear,
+        )
+          ? (profile.studyYear as StudyYear)
+          : null
+        if (!validYear) return
+        setSelectedYear(validYear)
+        setSelectedModules(profile.interestModules)
+        setDescription(profile.description ?? '')
+        setStep('rules')
+      })
+      .catch(() => {
+        // fall back to the normal onboarding flow
+      })
+      .finally(() => {
+        if (!cancelled) setIsBootstrapping(false)
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthLoading, user])
 
   useEffect(() => {
     if (step !== 'quiz' || !currentQuestion || isSubmitted) {
@@ -320,6 +357,17 @@ export function CompetitionPage() {
   const activeStepIndex = stepOrder.indexOf(
     step === 'complete' || step === 'rules' ? 'quiz' : step,
   )
+
+  if (isBootstrapping) {
+    return (
+      <div className="flex min-h-full w-full items-center justify-center bg-background">
+        <LoaderCircleIcon
+          className="h-6 w-6 animate-spin text-primary"
+          aria-label="Loading"
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-full w-full bg-background">

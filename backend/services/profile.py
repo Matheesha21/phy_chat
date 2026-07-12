@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from models.profile import StudentProfile
+from models.user import User
 from schemas.profile import ProfileUpsertRequest
 
 
@@ -36,6 +37,10 @@ def upsert_profile(db: Session, user_id: int, payload: ProfileUpsertRequest) -> 
             description=payload.description,
         )
         db.add(profile)
+
+    user = db.get(User, user_id)
+    if user and not user.has_completed_competition_onboarding:
+        user.has_completed_competition_onboarding = True
 
     db.commit()
     db.refresh(profile)

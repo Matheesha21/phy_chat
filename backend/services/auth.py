@@ -23,6 +23,7 @@ def _build_user_read(user: User) -> UserRead:
         full_name=user.full_name,
         picture_url=user.picture_url,
         is_active=user.is_active,
+        has_completed_competition_onboarding=user.has_completed_competition_onboarding,
     )
 
 

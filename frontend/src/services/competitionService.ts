@@ -156,6 +156,17 @@ export const competitionService = {
     }
   },
 
+  async getProfile(): Promise<SaveProfileResult> {
+    const result = await httpClient.get<ProfileResponseDto>('/profile/')
+    return {
+      id: result.id,
+      userId: result.user_id,
+      studyYear: result.study_year,
+      interestModules: result.interest_modules,
+      description: result.description,
+    }
+  },
+
   async generateQuestion(): Promise<QuizQuestion> {
     const result = await httpClient.post<QuizQuestionDto>('/quiz/generate')
     return {
