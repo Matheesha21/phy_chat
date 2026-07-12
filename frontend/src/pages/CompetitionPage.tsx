@@ -32,6 +32,7 @@ type CompetitionStep =
   | 'modules'
   | 'interests'
   | 'rules'
+  | 'returning'
   | 'quiz'
   | 'complete'
 
@@ -110,9 +111,15 @@ export function CompetitionPage() {
   const screenInit = useScreenInit() as CompetitionScreenState
   const initialStep: CompetitionStep =
     screenInit.step &&
-    ['year', 'modules', 'interests', 'rules', 'quiz', 'complete'].includes(
-      screenInit.step,
-    )
+    [
+      'year',
+      'modules',
+      'interests',
+      'rules',
+      'returning',
+      'quiz',
+      'complete',
+    ].includes(screenInit.step)
       ? screenInit.step
       : 'year'
   const initialYear =
@@ -175,7 +182,7 @@ export function CompetitionPage() {
         setSelectedYear(validYear)
         setSelectedModules(profile.interestModules)
         setDescription(profile.description ?? '')
-        setStep('rules')
+        setStep('returning')
       })
       .catch(() => {
         // fall back to the normal onboarding flow
@@ -401,7 +408,7 @@ export function CompetitionPage() {
           </div>
         </header>
 
-        {step !== 'quiz' && (
+        {step !== 'quiz' && step !== 'returning' && (
           <ol
             className="mb-8 grid grid-cols-4 gap-2"
             aria-label="Competition progress"
@@ -447,6 +454,47 @@ export function CompetitionPage() {
             You've reached today's limit of {DAILY_QUESTION_LIMIT} questions.
             Come back tomorrow for more.
           </div>
+        )}
+
+        {step === 'returning' && (
+          <section
+            className="mx-auto max-w-2xl"
+            aria-labelledby="returning-heading"
+          >
+            <div className="rounded-2xl border border-border bg-card p-6 text-center shadow-sm sm:p-10">
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gold/20 text-primary">
+                <TrophyIcon className="h-7 w-7" />
+              </span>
+              <p className="mt-5 text-xs font-bold uppercase tracking-[0.16em] text-primary">
+                Welcome back
+              </p>
+              <h3
+                id="returning-heading"
+                className="mt-2 text-3xl font-bold text-foreground"
+              >
+                {firstName}, here's where you stand.
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                Your cumulative score across the Physics Challenge Arena.
+              </p>
+              <div className="my-8 rounded-xl border border-border p-6">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Total score
+                </p>
+                <p className="mt-1 text-4xl font-bold text-foreground">
+                  {user?.competition_score ?? 0}{' '}
+                  <span className="text-base">pts</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={startCompetition}
+                className="mx-auto inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <RotateCcwIcon className="h-4 w-4" /> Let's start again
+              </button>
+            </div>
+          </section>
         )}
 
         {step === 'year' && (

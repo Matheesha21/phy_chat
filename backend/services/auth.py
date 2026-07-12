@@ -10,12 +10,14 @@ from sqlalchemy.orm import Session
 
 from core.config import get_allowed_email_domain, get_google_client_id, get_session_cookie_name, is_cookie_secure
 from core.database import get_db
+from models.leaderboard import LeaderboardEntry
 from models.user import User
 from schemas.auth import AuthResponse, UserRead
 from services.session_store import create_session, delete_session, get_session_user_id
 
 
-def _build_user_read(user: User) -> UserRead:
+def build_user_read(db: Session, user: User) -> UserRead:
+    entry = db.scalar(select(LeaderboardEntry).where(LeaderboardEntry.user_id == user.id))
     return UserRead(
         id=user.id,
         google_sub=user.google_sub,
@@ -24,6 +26,7 @@ def _build_user_read(user: User) -> UserRead:
         picture_url=user.picture_url,
         is_active=user.is_active,
         has_completed_competition_onboarding=user.has_completed_competition_onboarding,
+        competition_score=entry.score if entry else 0,
     )
 
 
@@ -78,8 +81,8 @@ def get_or_create_user_from_google(db: Session, claims: dict) -> User:
     return user
 
 
-def build_auth_response(user: User, session_expires_at: datetime) -> AuthResponse:
-    return AuthResponse(user=_build_user_read(user), session_expires_at=session_expires_at)
+def build_auth_response(db: Session, user: User, session_expires_at: datetime) -> AuthResponse:
+    return AuthResponse(user=build_user_read(db, user), session_expires_at=session_expires_at)
 
 
 def set_session_cookie(response: Response, session_token: str, expires_at: datetime) -> None:
@@ -102,7 +105,7 @@ def authenticate_with_google(db: Session, token: str) -> tuple[AuthResponse, str
     claims = verify_google_id_token(token)
     user = get_or_create_user_from_google(db, claims)
     session_token, expires_at = create_session(user.id)
-    return build_auth_response(user, expires_at), session_token
+    return build_auth_response(db, user, expires_at), session_token
 
 
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
