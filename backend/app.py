@@ -4,6 +4,9 @@ from fastapi.responses import JSONResponse
 
 from api.auth import router as auth_router
 from api.chat import router as chat_router
+from api.leaderboard import router as leaderboard_router
+from api.profile import router as profile_router
+from api.quiz import router as quiz_router
 from core.config import get_cors_origins
 from core.postgres import check_postgres_health
 from core.redis import check_redis_health
@@ -23,6 +26,9 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(chat_router)
+app.include_router(profile_router)
+app.include_router(quiz_router)
+app.include_router(leaderboard_router)
 
 @app.get("/")
 def root():
