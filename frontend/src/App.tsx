@@ -1,20 +1,19 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { GoogleOAuthProvider } from '@react-oauth/google';
-import { Toaster } from 'sonner';
-import { ProtectedRoute } from './components/Auth/ProtectedRoute';
-import { Layout } from './components/Layout/Layout';
-import { AuthProvider } from './context/AuthContext';
-import { ChatProvider } from './context/ChatContext';
-import { ThemeProvider } from './context/ThemeContext';
-import { LoginPage } from './pages/LoginPage';
-import { ChatPage } from './pages/ChatPage';
-import { LecturesPage } from './pages/LecturesPage';
-import { LecturersPage } from './pages/LecturersPage';
-import { HallsPage } from './pages/HallsPage';
-import { AboutPage } from './pages/AboutPage';
+import React from 'react'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { GoogleOAuthProvider } from '@react-oauth/google'
+import { Toaster } from 'sonner'
+import { ProtectedRoute } from './components/Auth/ProtectedRoute'
+import { Layout } from './components/Layout/Layout'
+import { AuthProvider } from './context/AuthContext'
+import { ChatProvider } from './context/ChatContext'
+import { ThemeProvider } from './context/ThemeContext'
+import { LoginPage } from './pages/LoginPage'
+import { ChatPage } from './pages/ChatPage'
+import { CompetitionPage } from './pages/CompetitionPage'
+import { LeaderboardPage } from './pages/LeaderboardPage'
+import { AboutPage } from './pages/AboutPage'
 
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string
 
 export function App() {
   return (
@@ -28,10 +27,10 @@ export function App() {
                 <Route element={<ProtectedRoute />}>
                   <Route path="/" element={<Layout />}>
                     <Route index element={<ChatPage />} />
-                    <Route path="lectures" element={<LecturesPage />} />
-                    <Route path="lecturers" element={<LecturersPage />} />
-                    <Route path="halls" element={<HallsPage />} />
+                    <Route path="competitions" element={<CompetitionPage />} />
+                    <Route path="leaderboard" element={<LeaderboardPage />} />
                     <Route path="about" element={<AboutPage />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
                   </Route>
                 </Route>
               </Routes>
@@ -40,6 +39,6 @@ export function App() {
           </AuthProvider>
         </BrowserRouter>
       </GoogleOAuthProvider>
-    </ThemeProvider>);
-
+    </ThemeProvider>
+  )
 }
