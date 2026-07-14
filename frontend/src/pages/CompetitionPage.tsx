@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react'
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
-  AwardIcon,
   CheckCircle2Icon,
   CircleIcon,
   ClockIcon,
@@ -392,19 +391,6 @@ export function CompetitionPage() {
               Choose your level, test your knowledge, and earn points for the
               department leaderboard.
             </p>
-          </div>
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-sm">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gold/15 text-primary">
-              <AwardIcon className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-muted-foreground">
-                Each correct answer
-              </p>
-              <p className="text-sm font-bold text-foreground">
-                +1 competition point
-              </p>
-            </div>
           </div>
         </header>
 
