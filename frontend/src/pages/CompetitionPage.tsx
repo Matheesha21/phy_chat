@@ -105,7 +105,7 @@ const studyYears: {
 const stepOrder: CompetitionStep[] = ['year', 'modules', 'interests', 'quiz']
 
 export function CompetitionPage() {
-  const { user, isLoading: isAuthLoading } = useAuth()
+  const { user, isLoading: isAuthLoading, refreshUser } = useAuth()
   const firstName = user?.full_name?.split(' ')[0] || 'there'
   const screenInit = useScreenInit() as CompetitionScreenState
   const initialStep: CompetitionStep =
@@ -156,12 +156,16 @@ export function CompetitionPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isBootstrapping, setIsBootstrapping] = useState(!screenInit.step)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const hasBootstrappedRef = useRef(false)
 
   const modules = selectedYear ? PHYSICS_MODULES[selectedYear] : []
 
   useEffect(() => {
     if (screenInit.step) return
     if (isAuthLoading) return
+    if (hasBootstrappedRef.current) return
+    hasBootstrappedRef.current = true
+
     if (!user?.has_completed_competition_onboarding) {
       setIsBootstrapping(false)
       return
@@ -279,6 +283,7 @@ export function CompetitionPage() {
         interestedModules: selectedModules,
         description: description.trim() || null,
       })
+      await refreshUser()
       setStep('rules')
     } catch {
       toast.error('Your preferences could not be saved. Please try again.')
@@ -344,10 +349,6 @@ export function CompetitionPage() {
       return
     }
     void fetchNextQuestion()
-  }
-
-  const endQuiz = () => {
-    setStep('complete')
   }
 
   const resetCompetition = () => {
@@ -819,15 +820,7 @@ export function CompetitionPage() {
                   </div>
                 )}
 
-                <div className="mt-7 flex flex-col-reverse justify-between gap-3 sm:flex-row sm:items-center">
-                  <button
-                    type="button"
-                    onClick={endQuiz}
-                    disabled={isLoading}
-                    className="text-sm font-bold text-muted-foreground transition-colors hover:text-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    Stop for today
-                  </button>
+                <div className="mt-7 flex justify-end gap-3">
                   {!isSubmitted ? (
                     <button
                       type="button"

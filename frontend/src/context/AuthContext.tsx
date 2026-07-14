@@ -14,6 +14,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loginWithGoogle: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,6 +43,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  const refreshUser = async () => {
+    try {
+      const currentUser = await authService.getCurrentUser();
+      setUser(currentUser);
+    } catch (err) {
+      if (!(err instanceof ApiError)) throw err;
+    }
+  };
+
   const loginWithGoogle = async (idToken: string) => {
     const { user: signedInUser } = await authService.signInWithGoogle(idToken);
     setUser(signedInUser);
@@ -64,7 +74,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isLoading,
         isAuthenticated: user !== null,
         loginWithGoogle,
-        logout
+        logout,
+        refreshUser
       }}>
 
       {children}
