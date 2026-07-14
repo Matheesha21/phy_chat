@@ -1,284 +1,136 @@
-# 🎓 USJ Physics Department AI Assistant
+# USJ Physics Department AI Assistant
 
-An AI-powered web application developed for the **Department of Physics, University of Sri Jayewardenepura**. The system provides students with an intelligent virtual assistant capable of answering department-related questions, providing academic information, and assisting with basic physics concepts through natural language conversations.
+An AI-powered web application built for the **Department of Physics, University of Sri Jayewardenepura**. It gives students an intelligent virtual assistant for department-related questions, academic information, and basic physics concepts through natural language conversation. It also includes a competition feature where students answer LLM-generated MCQs and track their scores on a leaderboard.
 
----
+## Features
 
-## 📖 Overview
+**AI Chat Assistant**
+- Natural language conversations powered by Google Gemini
+- Context-aware, history-backed responses
 
-The USJ Physics Department AI Assistant is designed to improve access to academic information by providing students with a conversational interface. Instead of searching through notices or contacting lecturers for common questions, students can interact with an AI assistant that delivers accurate, context-aware responses.
+**Lecture Information**
+- Lecture schedules, times, and course/semester information
 
-The assistant combines structured university data stored in a MySQL database with Google's Gemini AI to provide reliable answers about department activities and general physics topics.
+**Quiz Competition**
+- LLM-generated MCQ quizzes
+- Student leaderboard
 
----
+**Authentication**
+- Google SSO restricted to a university email domain
 
-## ✨ Features
-
-### 🤖 AI Chat Assistant
-
-* Natural language conversations
-* Google Gemini AI integration
-* Context-aware responses
-* Conversation history
-
-### 📅 Lecture Information
-
-* Lecture schedules
-* Lecture times
-* Course information
-* Semester schedules
-
-### 👨‍🏫 Lecturer Directory
-
-* Lecturer profiles
-* Contact information
-* Office locations
-* Subjects taught
-
-### 🏛️ Hall Information
-
-* Lecture hall locations
-* Laboratory information
-* Room availability
-* Building details
-
-### 📢 Department Information
-
-* Announcements
-* Frequently Asked Questions
-* Academic notices
-* Department information
-
-### 📚 Physics Support
-
-* Basic physics explanations
-* Formula assistance
-* Concept clarification
-* Educational guidance
-
----
-
-# 🏗️ System Architecture
+## Architecture
 
 ```
 React Frontend
-       │
-       ▼
+      │
+      ▼
 FastAPI Backend
-       │
- ┌───────────────┐
- │               │
- ▼               ▼
-MySQL       Google Gemini AI
-       │
-       ▼
-AI Response
+      │
+ ┌────┴─────┐
+ │          │
+ ▼          ▼
+PostgreSQL  Google Gemini AI
+ │
+ ▼
+Redis (sessions/cache)
 ```
 
----
+## Tech Stack
 
-# 🛠️ Technology Stack
+| Layer      | Technologies |
+|------------|--------------|
+| Frontend   | React, TypeScript, Vite, React Router, Axios, Tailwind CSS |
+| Backend    | Python 3.12+, FastAPI, Uvicorn, Pydantic |
+| Database   | PostgreSQL, SQLAlchemy 2.0, Alembic, Redis |
+| AI         | Google Gemini API, LangChain |
+| Auth       | Google OAuth SSO |
 
-## Frontend
-
-* React
-* Vite
-* React Router
-* Axios
-* Tailwind CSS
-* Magic Patterns (UI Design)
-
-## Backend
-
-* Python 3.12+
-* FastAPI
-* Uvicorn
-
-## Database
-
-* MySQL 8
-* SQLAlchemy 2.0
-* Alembic
-
-## AI
-
-* Google Gemini API
-* Google AI Studio
-
-## Validation
-
-* Pydantic
-
-## Version Control
-
-* Git
-* GitHub
-
----
-
-# 📂 Project Structure
+## Project Structure
 
 ```
-usj-physics-assistant/
-
-├── frontend/
-│   ├── src/
-│   ├── public/
-│   └── package.json
-│
-├── backend/
-│   ├── app/
-│   │   ├── api/
-│   │   ├── core/
-│   │   ├── database/
-│   │   ├── models/
-│   │   ├── schemas/
-│   │   ├── services/
-│   │   ├── utils/
-│   │   └── main.py
-│   │
-│   ├── alembic/
-│   ├── requirements.txt
-│   └── .env
-│
-├── docs/
-├── README.md
-└── LICENSE
+.
+├── backend/     FastAPI application (API, models, services, migrations)
+└── frontend/    React + Vite application
 ```
 
----
+## Getting Started
 
-# 🚀 Getting Started
+### Prerequisites
+- Node.js 18+
+- Python 3.12+
+- PostgreSQL and Redis instances (local or hosted)
+- Google OAuth client ID and Gemini API key
 
-## Clone the Repository
+### Clone the repository
 
 ```bash
-git clone https://github.com/your-username/usj-physics-assistant.git
-
-cd usj-physics-assistant
+git clone https://github.com/your-username/phy_chat.git
+cd phy_chat
 ```
 
----
-
-## Frontend
+### Backend setup
 
 ```bash
-cd frontend
-
-npm install
-
-npm run dev
-```
-
----
-
-## Backend
-
-Create a virtual environment.
-
-```bash
+cd backend
 python -m venv venv
-```
-
-Activate the virtual environment.
-
-### Windows
-
-```bash
-venv\Scripts\activate
-```
-
-### macOS / Linux
-
-```bash
-source venv/bin/activate
-```
-
-Install dependencies.
-
-```bash
+source venv/bin/activate      # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Run the API.
+Copy `.env.example` to `.env` and fill in the values:
 
 ```bash
-uvicorn app.main:app --reload
+cp .env.example .env
 ```
 
----
-
-# ⚙️ Environment Variables
-
-Create a `.env` file inside the backend directory.
-
-```env
-DATABASE_URL=mysql+pymysql://username:password@localhost/usj_physics
-
-GEMINI_API_KEY=YOUR_GOOGLE_AI_STUDIO_API_KEY
-
-SECRET_KEY=YOUR_SECRET_KEY
-
-ALGORITHM=HS256
-
-ACCESS_TOKEN_EXPIRE_MINUTES=60
+```
+POSTGRES_DATABASE_URL=postgresql://user:password@localhost:5432/phy_chat
+REDIS_URL=redis://localhost:6379
+GOOGLE_CLIENT_ID=your_google_client_id
+SESSION_COOKIE_NAME=phy_chat_session
+SESSION_TTL_MINUTES=10080
+COOKIE_SECURE=false
+ALLOWED_EMAIL_DOMAIN=sjb.mrt.ac.lk
+GOOGLE_API_KEY=your_gemini_api_key
+GEMINI_MODEL=gemini-2.5-flash
+CORS_ORIGINS=http://localhost:5173
 ```
 
----
+Run database migrations and start the server:
 
-# 📡 API Endpoints
+```bash
+alembic upgrade head
+uvicorn app:app --reload
+```
 
-| Method | Endpoint         | Description                   |
-| ------ | ---------------- | ----------------------------- |
-| POST   | `/api/chat`      | Chat with the AI assistant    |
-| GET    | `/api/lectures`  | Retrieve lecture schedules    |
-| GET    | `/api/lecturers` | Retrieve lecturer information |
-| GET    | `/api/halls`     | Retrieve hall information     |
-| GET    | `/api/faqs`      | Retrieve FAQs                 |
-| GET    | `/api/notices`   | Retrieve department notices   |
-| GET    | `/api/health`    | Health check                  |
+The API is served at `http://localhost:8000`.
 
----
+### Frontend setup
 
-# 🎯 Project Goals
+```bash
+cd frontend
+npm install
+```
 
-* Improve student access to department information.
-* Provide instant answers to common academic questions.
-* Reduce repetitive administrative inquiries.
-* Support students with introductory physics concepts.
-* Deliver a modern AI-powered university assistant.
+Copy `.env.example` to `.env` and fill in the values:
 
----
+```bash
+cp .env.example .env
+```
 
-# 🔮 Future Enhancements
+```
+VITE_API_BASE_URL=http://localhost:8000
+VITE_GOOGLE_CLIENT_ID=your_google_client_id
+```
 
-* Student authentication
-* Admin dashboard
-* Voice interaction
-* PDF document search
-* Retrieval-Augmented Generation (RAG)
-* Sinhala language support
-* Push notifications
-* Examination schedules
-* Laboratory booking system
-* Course registration assistance
+Run the dev server:
 
----
+```bash
+npm run dev
+```
 
-# 🤝 Contributing
+The app is served at `http://localhost:5173`.
 
-Contributions are welcome.
+## License
 
-Please create a feature branch, commit your changes, and submit a Pull Request for review.
-
----
-
-# 📄 License
-
-This project is developed for academic purposes for the **Department of Physics, University of Sri Jayewardenepura**.
-
----
-
-# 👨‍💻 Developers
-
-Developed with ❤️ using **FastAPI**, **React**, **MySQL**, and **Google Gemini AI**.
+This project was developed for an exhibition at the **Department of Physics, University of Sri Jayewardenepura**.
