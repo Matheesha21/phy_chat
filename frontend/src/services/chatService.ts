@@ -7,26 +7,32 @@ export interface ChatMessage {
   timestamp: Date
 }
 
-interface ChatHistoryEntry {
+interface ChatMessageEntry {
+  id: number
   role: 'user' | 'assistant'
-  content: string
+  message: string
+  created_at: string
 }
 
 interface ChatResponse {
   reply: string
 }
 
-const toHistoryEntry = (message: ChatMessage): ChatHistoryEntry => ({
-  role: message.sender === 'user' ? 'user' : 'assistant',
-  content: message.text,
+const toChatMessage = (entry: ChatMessageEntry): ChatMessage => ({
+  id: String(entry.id),
+  text: entry.message,
+  sender: entry.role === 'user' ? 'user' : 'ai',
+  timestamp: new Date(entry.created_at),
 })
 
 export const chatService = {
-  sendMessage: async (message: string, history: ChatMessage[]): Promise<ChatMessage> => {
-    const { reply } = await httpClient.post<ChatResponse>('/chat/', {
-      message,
-      history: history.map(toHistoryEntry),
-    })
+  getHistory: async (): Promise<ChatMessage[]> => {
+    const entries = await httpClient.get<ChatMessageEntry[]>('/chat/history')
+    return entries.map(toChatMessage)
+  },
+
+  sendMessage: async (message: string): Promise<ChatMessage> => {
+    const { reply } = await httpClient.post<ChatResponse>('/chat/', { message })
 
     return {
       id: Math.random().toString(36).substring(7),
@@ -34,5 +40,9 @@ export const chatService = {
       sender: 'ai',
       timestamp: new Date(),
     }
+  },
+
+  clearHistory: async (): Promise<void> => {
+    await httpClient.del('/chat/history')
   },
 }

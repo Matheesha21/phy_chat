@@ -1,23 +1,50 @@
-import React, { useState, createContext, useContext, ReactNode } from 'react'
+import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react'
 import { ChatMessage, chatService } from '../services/chatService'
 import { ApiError } from '../services/httpClient'
 import { toast } from 'sonner'
+
+const WELCOME_MESSAGE: ChatMessage = {
+  id: 'welcome-msg',
+  text: 'Hello! I am the USJ Physics AI Assistant. Ask me about concepts, formulas, or problem solving.',
+  sender: 'ai',
+  timestamp: new Date(),
+}
+
 interface ChatContextType {
   messages: ChatMessage[]
   isLoading: boolean
+  isHistoryLoading: boolean
   sendMessage: (text: string) => Promise<void>
+  clearChat: () => Promise<void>
 }
 const ChatContext = createContext<ChatContextType | undefined>(undefined)
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome-msg',
-      text: 'Hello! I am the USJ Physics AI Assistant. Ask me about concepts, formulas, or problem solving.',
-      sender: 'ai',
-      timestamp: new Date(),
-    },
-  ])
+  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE])
   const [isLoading, setIsLoading] = useState(false)
+  const [isHistoryLoading, setIsHistoryLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    const loadHistory = async () => {
+      try {
+        const history = await chatService.getHistory()
+        if (!cancelled && history.length > 0) {
+          setMessages(history)
+        }
+      } catch (error) {
+        const message =
+          error instanceof ApiError ? error.message : 'Failed to load chat history.'
+        toast.error(message)
+      } finally {
+        if (!cancelled) setIsHistoryLoading(false)
+      }
+    }
+    loadHistory()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const sendMessage = async (text: string) => {
     if (!text.trim()) return
     const userMsg: ChatMessage = {
@@ -26,11 +53,10 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       sender: 'user',
       timestamp: new Date(),
     }
-    const history = messages
     setMessages((prev) => [...prev, userMsg])
     setIsLoading(true)
     try {
-      const aiReply = await chatService.sendMessage(text, history)
+      const aiReply = await chatService.sendMessage(text)
       setMessages((prev) => [...prev, aiReply])
     } catch (error) {
       const message =
@@ -42,12 +68,26 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false)
     }
   }
+
+  const clearChat = async () => {
+    try {
+      await chatService.clearHistory()
+      setMessages([WELCOME_MESSAGE])
+    } catch (error) {
+      const message =
+        error instanceof ApiError ? error.message : 'Failed to clear chat history.'
+      toast.error(message)
+    }
+  }
+
   return (
     <ChatContext.Provider
       value={{
         messages,
         isLoading,
+        isHistoryLoading,
         sendMessage,
+        clearChat,
       }}
     >
       {children}
