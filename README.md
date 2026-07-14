@@ -133,6 +133,10 @@ npm run dev
 
 The app is served at `http://localhost:5173`.
 
+## Documentation
+
+- [API Documentation](docs/API.md) — every backend endpoint, request/response shapes, and auth details
+
 ## License
 
 This project was developed for an exhibition at the **Department of Physics, University of Sri Jayewardenepura**.
