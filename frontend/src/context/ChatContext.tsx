@@ -3,13 +3,6 @@ import { ChatMessage, chatService } from '../services/chatService'
 import { ApiError } from '../services/httpClient'
 import { toast } from 'sonner'
 
-const WELCOME_MESSAGE: ChatMessage = {
-  id: 'welcome-msg',
-  text: 'Hello! I am the USJ Physics AI Assistant. Ask me about concepts, formulas, or problem solving.',
-  sender: 'ai',
-  timestamp: new Date(),
-}
-
 interface ChatContextType {
   messages: ChatMessage[]
   isLoading: boolean
@@ -19,7 +12,7 @@ interface ChatContextType {
 }
 const ChatContext = createContext<ChatContextType | undefined>(undefined)
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isHistoryLoading, setIsHistoryLoading] = useState(true)
 
@@ -72,7 +65,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const clearChat = async () => {
     try {
       await chatService.clearHistory()
-      setMessages([WELCOME_MESSAGE])
+      setMessages([])
     } catch (error) {
       const message =
         error instanceof ApiError ? error.message : 'Failed to clear chat history.'
