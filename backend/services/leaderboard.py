@@ -28,9 +28,18 @@ def _get_or_create_entry(db: Session, user_id: int) -> LeaderboardEntry:
     return entry
 
 
-def record_answer(db: Session, user_id: int, is_correct: bool, time_taken_seconds: float, score_awarded: int) -> LeaderboardEntry:
+def record_answer(
+    db: Session,
+    user_id: int,
+    is_correct: bool,
+    is_missed: bool,
+    time_taken_seconds: float,
+    score_awarded: int,
+) -> LeaderboardEntry:
     entry = _get_or_create_entry(db, user_id)
-    if is_correct:
+    if is_missed:
+        entry.missed_answers += 1
+    elif is_correct:
         entry.correct_answers += 1
     else:
         entry.wrong_answers += 1
@@ -57,6 +66,7 @@ def get_leaderboard(db: Session, limit: int = 50) -> list[LeaderboardEntryRead]:
             email=user.email,
             correct_answers=entry.correct_answers,
             wrong_answers=entry.wrong_answers,
+            missed_answers=entry.missed_answers,
             total_time_seconds=entry.total_time_seconds,
             score=entry.score,
         )

@@ -99,18 +99,19 @@ export function LeaderboardPage() {
             className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
             aria-label="Ranked students"
           >
-            <div className="hidden grid-cols-[80px_1fr_90px_90px_105px] gap-4 border-b border-border bg-secondary/50 px-5 py-3 text-xs font-bold uppercase tracking-wide text-muted-foreground sm:grid">
+            <div className="hidden grid-cols-[80px_1fr_90px_90px_90px_105px] gap-4 border-b border-border bg-secondary/50 px-5 py-3 text-xs font-bold uppercase tracking-wide text-muted-foreground sm:grid">
               <span>Rank</span>
               <span>Student</span>
               <span className="text-right">Correct</span>
               <span className="text-right">Wrong</span>
+              <span className="text-right">Missed</span>
               <span className="text-right">Marks</span>
             </div>
             <ol>
               {entries.map((entry) => (
                 <li
                   key={entry.userId}
-                  className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-border p-4 last:border-0 sm:grid-cols-[80px_1fr_90px_90px_105px] sm:gap-4 sm:px-5"
+                  className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-border p-4 last:border-0 sm:grid-cols-[80px_1fr_90px_90px_90px_105px] sm:gap-4 sm:px-5"
                 >
                   <div className="flex items-center gap-3">
                     <span
@@ -132,6 +133,9 @@ export function LeaderboardPage() {
                   </p>
                   <p className="hidden text-right text-sm text-muted-foreground sm:block">
                     {entry.wrongAnswers}
+                  </p>
+                  <p className="hidden text-right text-sm text-muted-foreground sm:block">
+                    {entry.missedAnswers}
                   </p>
                   <p className="text-right text-sm font-bold text-foreground">
                     {entry.score}{' '}

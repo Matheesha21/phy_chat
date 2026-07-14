@@ -189,11 +189,7 @@ export function CompetitionPage() {
 
   useEffect(() => {
     if (step === 'quiz' && currentQuestion && !isSubmitted && timeLeft === 0) {
-      if (selectedOption !== null) {
-        void submitAnswer()
-      } else {
-        recordUnansweredTimeout()
-      }
+      void submitAnswer(selectedOption)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft])
@@ -275,15 +271,15 @@ export function CompetitionPage() {
     }))
   }
 
-  const submitAnswer = async () => {
-    if (!currentQuestion || selectedOption === null || isSubmitted) return
+  const submitAnswer = async (selectedIndex: number | null) => {
+    if (!currentQuestion || isSubmitted) return
     setIsSubmitted(true)
     setIsLoading(true)
     const timeTakenSeconds = QUESTION_SECONDS - timeLeft
     try {
       const result = await competitionService.submitAnswer({
         quizId: currentQuestion.id,
-        selectedOptionIndex: selectedOption,
+        selectedOptionIndex: selectedIndex,
         timeTakenSeconds,
       })
       setFeedback({
@@ -298,12 +294,6 @@ export function CompetitionPage() {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const recordUnansweredTimeout = () => {
-    setIsSubmitted(true)
-    setFeedback({ correct: false, correctOptionIndex: -1, scoreAwarded: 0 })
-    applyAnswerOutcome(false, 0)
   }
 
   const resetCompetition = () => {
@@ -772,7 +762,7 @@ export function CompetitionPage() {
                   {!isSubmitted ? (
                     <button
                       type="button"
-                      onClick={() => void submitAnswer()}
+                      onClick={() => void submitAnswer(selectedOption)}
                       disabled={selectedOption === null || isLoading}
                       className="rounded-lg bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
