@@ -2,6 +2,8 @@
 
 An AI-powered web application built for the **Department of Physics, University of Sri Jayewardenepura**. It gives students an intelligent virtual assistant for department-related questions, academic information, and basic physics concepts through natural language conversation. It also includes a competition feature where students answer LLM-generated MCQs and track their scores on a leaderboard.
 
+![UI Preview](docs/UI.png)
+
 ## Features
 
 **AI Chat Assistant**
