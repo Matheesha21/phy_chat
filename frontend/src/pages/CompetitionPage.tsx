@@ -3,11 +3,13 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   AwardIcon,
-  BriefcaseIcon,
   CheckCircle2Icon,
   CircleIcon,
+  ClockIcon,
   GraduationCapIcon,
+  ListChecksIcon,
   LoaderCircleIcon,
+  PenLineIcon,
   RotateCcwIcon,
   TargetIcon,
   TimerIcon,
@@ -17,17 +19,22 @@ import {
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
 import {
-  CAREER_PATHS,
   competitionService,
   PHYSICS_MODULES,
-  type CareerPath,
   type PhysicsModule,
   type QuizQuestion,
   type StudyYear,
 } from '../services/competitionService'
 import { useScreenInit } from '../useScreenInit.js'
 
-type CompetitionStep = 'year' | 'modules' | 'career' | 'quiz' | 'complete'
+type CompetitionStep =
+  | 'year'
+  | 'modules'
+  | 'interests'
+  | 'rules'
+  | 'returning'
+  | 'quiz'
+  | 'complete'
 
 interface CompetitionScreenState {
   step?: CompetitionStep
@@ -37,6 +44,7 @@ interface CompetitionScreenState {
 const QUESTION_SECONDS = 30
 const DAILY_QUESTION_LIMIT = 10
 const DAILY_LIMIT_STORAGE_KEY = 'phy_chat_quiz_daily'
+const DESCRIPTION_MAX_LENGTH = 500
 
 function moduleLabel(module: PhysicsModule): string {
   return `${module.code} ${module.name}`
@@ -95,17 +103,23 @@ const studyYears: {
   },
 ]
 
-const stepOrder: CompetitionStep[] = ['year', 'modules', 'career', 'quiz']
+const stepOrder: CompetitionStep[] = ['year', 'modules', 'interests', 'quiz']
 
 export function CompetitionPage() {
-  const { user } = useAuth()
+  const { user, isLoading: isAuthLoading } = useAuth()
   const firstName = user?.full_name?.split(' ')[0] || 'there'
   const screenInit = useScreenInit() as CompetitionScreenState
   const initialStep: CompetitionStep =
     screenInit.step &&
-    ['year', 'modules', 'career', 'quiz', 'complete'].includes(
-      screenInit.step,
-    )
+    [
+      'year',
+      'modules',
+      'interests',
+      'rules',
+      'returning',
+      'quiz',
+      'complete',
+    ].includes(screenInit.step)
       ? screenInit.step
       : 'year'
   const initialYear =
@@ -118,9 +132,7 @@ export function CompetitionPage() {
     initialYear,
   )
   const [selectedModules, setSelectedModules] = useState<string[]>([])
-  const [selectedCareer, setSelectedCareer] = useState<CareerPath | null>(
-    null,
-  )
+  const [description, setDescription] = useState('')
   const [isSavingProfile, setIsSavingProfile] = useState(false)
 
   const [dailyCount, setDailyCount] = useState(readDailyCount)
@@ -134,16 +146,55 @@ export function CompetitionPage() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [feedback, setFeedback] = useState<{
     correct: boolean
-    correctAnswer: string
+    correctOptionIndex: number
+    scoreAwarded: number
   } | null>(null)
   const [sessionStats, setSessionStats] = useState({
     answered: 0,
     correct: 0,
+    score: 0,
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [isBootstrapping, setIsBootstrapping] = useState(!screenInit.step)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const modules = selectedYear ? PHYSICS_MODULES[selectedYear] : []
+
+  useEffect(() => {
+    if (screenInit.step) return
+    if (isAuthLoading) return
+    if (!user?.has_completed_competition_onboarding) {
+      setIsBootstrapping(false)
+      return
+    }
+
+    let cancelled = false
+    competitionService
+      .getProfile()
+      .then((profile) => {
+        if (cancelled) return
+        const validYear = ([1, 2, 3, 4] as number[]).includes(
+          profile.studyYear,
+        )
+          ? (profile.studyYear as StudyYear)
+          : null
+        if (!validYear) return
+        setSelectedYear(validYear)
+        setSelectedModules(profile.interestModules)
+        setDescription(profile.description ?? '')
+        setStep('returning')
+      })
+      .catch(() => {
+        // fall back to the normal onboarding flow
+      })
+      .finally(() => {
+        if (!cancelled) setIsBootstrapping(false)
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthLoading, user])
 
   useEffect(() => {
     if (step !== 'quiz' || !currentQuestion || isSubmitted) {
@@ -196,14 +247,6 @@ export function CompetitionPage() {
     setStep('modules')
   }
 
-  const confirmModules = () => {
-    if (!selectedModules.length) {
-      toast.error('Choose at least one module to continue.')
-      return
-    }
-    setStep('career')
-  }
-
   const fetchNextQuestion = async () => {
     setIsLoading(true)
     try {
@@ -220,19 +263,24 @@ export function CompetitionPage() {
     }
   }
 
-  const chooseCareerAndStart = async (career: CareerPath) => {
+  const goToInterests = () => {
+    if (!selectedModules.length) {
+      toast.error('Choose at least one module to continue.')
+      return
+    }
+    setStep('interests')
+  }
+
+  const confirmProfile = async () => {
     if (!selectedYear) return
-    setSelectedCareer(career)
     setIsSavingProfile(true)
     try {
       await competitionService.saveProfile({
         year: selectedYear,
         interestedModules: selectedModules,
-        careerGoal: career.id,
+        description: description.trim() || null,
       })
-      setSessionStats({ answered: 0, correct: 0 })
-      setStep('quiz')
-      await fetchNextQuestion()
+      setStep('rules')
     } catch {
       toast.error('Your preferences could not be saved. Please try again.')
     } finally {
@@ -240,13 +288,20 @@ export function CompetitionPage() {
     }
   }
 
-  const applyAnswerOutcome = (correct: boolean) => {
+  const startCompetition = () => {
+    setSessionStats({ answered: 0, correct: 0, score: 0 })
+    setStep('quiz')
+    void fetchNextQuestion()
+  }
+
+  const applyAnswerOutcome = (correct: boolean, scoreAwarded: number) => {
     const nextDailyCount = dailyCount + 1
     setDailyCount(nextDailyCount)
     writeDailyCount(nextDailyCount)
     setSessionStats((previous) => ({
       answered: previous.answered + 1,
       correct: previous.correct + (correct ? 1 : 0),
+      score: previous.score + scoreAwarded,
     }))
     if (nextDailyCount >= DAILY_QUESTION_LIMIT) {
       setTimeout(() => setStep('complete'), 1500)
@@ -257,19 +312,19 @@ export function CompetitionPage() {
     if (!currentQuestion || selectedOption === null || isSubmitted) return
     setIsSubmitted(true)
     setIsLoading(true)
-    const selectedAnswer = String.fromCharCode(65 + selectedOption)
-    const timeTaken = QUESTION_SECONDS - timeLeft
+    const timeTakenSeconds = QUESTION_SECONDS - timeLeft
     try {
       const result = await competitionService.submitAnswer({
-        questionId: currentQuestion.id,
-        selectedAnswer,
-        timeTaken,
+        quizId: currentQuestion.id,
+        selectedOptionIndex: selectedOption,
+        timeTakenSeconds,
       })
       setFeedback({
-        correct: result.correct,
-        correctAnswer: result.correctAnswer,
+        correct: result.isCorrect,
+        correctOptionIndex: result.correctOptionIndex,
+        scoreAwarded: result.scoreAwarded,
       })
-      applyAnswerOutcome(result.correct)
+      applyAnswerOutcome(result.isCorrect, result.scoreAwarded)
     } catch {
       toast.error('Your answer could not be submitted. Please try again.')
       setIsSubmitted(false)
@@ -280,8 +335,8 @@ export function CompetitionPage() {
 
   const recordUnansweredTimeout = () => {
     setIsSubmitted(true)
-    setFeedback({ correct: false, correctAnswer: '' })
-    applyAnswerOutcome(false)
+    setFeedback({ correct: false, correctOptionIndex: -1, scoreAwarded: 0 })
+    applyAnswerOutcome(false, 0)
   }
 
   const nextQuestion = () => {
@@ -298,7 +353,7 @@ export function CompetitionPage() {
 
   const resetCompetition = () => {
     setSelectedModules([])
-    setSelectedCareer(null)
+    setDescription('')
     setCurrentQuestion(null)
     setSelectedOption(null)
     setIsSubmitted(false)
@@ -307,8 +362,19 @@ export function CompetitionPage() {
   }
 
   const activeStepIndex = stepOrder.indexOf(
-    step === 'complete' ? 'quiz' : step,
+    step === 'complete' || step === 'rules' ? 'quiz' : step,
   )
+
+  if (isBootstrapping) {
+    return (
+      <div className="flex min-h-full w-full items-center justify-center bg-background">
+        <LoaderCircleIcon
+          className="h-6 w-6 animate-spin text-primary"
+          aria-label="Loading"
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-full w-full bg-background">
@@ -342,46 +408,93 @@ export function CompetitionPage() {
           </div>
         </header>
 
-        <ol
-          className="mb-8 grid grid-cols-4 gap-2"
-          aria-label="Competition progress"
-        >
-          {[
-            ['1', 'Year'],
-            ['2', 'Modules'],
-            ['3', 'Career'],
-            ['4', 'Quiz'],
-          ].map(([number, label], index) => {
-            const complete = index < activeStepIndex
-            const active = index === activeStepIndex
-            return (
-              <li key={label} className="flex items-center gap-2">
-                <span
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${complete || active ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}
-                >
-                  {complete ? <CheckCircle2Icon className="h-4 w-4" /> : number}
-                </span>
-                <span
-                  className={`text-sm font-semibold ${index <= activeStepIndex ? 'text-foreground' : 'text-muted-foreground'}`}
-                >
-                  {label}
-                </span>
-                {index < 3 && (
+        {step !== 'quiz' && step !== 'returning' && (
+          <ol
+            className="mb-8 grid grid-cols-4 gap-2"
+            aria-label="Competition progress"
+          >
+            {[
+              ['1', 'Year'],
+              ['2', 'Modules'],
+              ['3', 'Interests'],
+              ['4', 'Quiz'],
+            ].map(([number, label], index) => {
+              const complete = index < activeStepIndex
+              const active = index === activeStepIndex
+              return (
+                <li key={label} className="flex items-center gap-2">
                   <span
-                    className="ml-auto h-px flex-1 bg-border"
-                    aria-hidden="true"
-                  />
-                )}
-              </li>
-            )
-          })}
-        </ol>
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${complete || active ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'}`}
+                  >
+                    {complete ? (
+                      <CheckCircle2Icon className="h-4 w-4" />
+                    ) : (
+                      number
+                    )}
+                  </span>
+                  <span
+                    className={`text-sm font-semibold ${index <= activeStepIndex ? 'text-foreground' : 'text-muted-foreground'}`}
+                  >
+                    {label}
+                  </span>
+                  {index < 3 && (
+                    <span
+                      className="ml-auto h-px flex-1 bg-border"
+                      aria-hidden="true"
+                    />
+                  )}
+                </li>
+              )
+            })}
+          </ol>
+        )}
 
         {dailyRemaining <= 0 && step !== 'complete' && (
           <div className="mb-6 rounded-xl border border-gold/40 bg-gold/10 p-4 text-sm font-semibold text-foreground">
             You've reached today's limit of {DAILY_QUESTION_LIMIT} questions.
             Come back tomorrow for more.
           </div>
+        )}
+
+        {step === 'returning' && (
+          <section
+            className="mx-auto max-w-2xl"
+            aria-labelledby="returning-heading"
+          >
+            <div className="rounded-2xl border border-border bg-card p-6 text-center shadow-sm sm:p-10">
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gold/20 text-primary">
+                <TrophyIcon className="h-7 w-7" />
+              </span>
+              <p className="mt-5 text-xs font-bold uppercase tracking-[0.16em] text-primary">
+                Welcome back
+              </p>
+              <h3
+                id="returning-heading"
+                className="mt-2 text-3xl font-bold text-foreground"
+              >
+                {firstName}, here's where you stand.
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                Your cumulative score across the Physics Challenge Arena.
+              </p>
+              <div className="my-8 rounded-xl border border-border p-6">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Total score
+                </p>
+                <p className="mt-1 text-4xl font-bold text-foreground">
+                  {user?.competition_score ?? 0}{' '}
+                  <span className="text-base">pts</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={startCompetition}
+                className="mx-auto inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <RotateCcwIcon className="h-4 w-4" /> Let's start again
+              </button>
+            </div>
+          </section>
         )}
 
         {step === 'year' && (
@@ -478,7 +591,7 @@ export function CompetitionPage() {
               <button
                 type="button"
                 disabled={!selectedModules.length}
-                onClick={confirmModules}
+                onClick={goToInterests}
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 Continue
@@ -488,8 +601,11 @@ export function CompetitionPage() {
           </section>
         )}
 
-        {step === 'career' && (
-          <section aria-labelledby="career-heading">
+        {step === 'interests' && (
+          <section
+            className="mx-auto max-w-2xl"
+            aria-labelledby="interests-heading"
+          >
             <button
               type="button"
               onClick={() => setStep('modules')}
@@ -498,44 +614,123 @@ export function CompetitionPage() {
               <ArrowLeftIcon className="h-4 w-4" />
               Change modules
             </button>
-            <div className="mb-6">
-              <h3
-                id="career-heading"
-                className="text-xl font-bold text-foreground"
-              >
-                What's your favorite career in the field of physics?
-              </h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                This helps us personalize your quiz questions.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {CAREER_PATHS.map((career) => (
-                <button
-                  key={career.id}
-                  type="button"
-                  disabled={isSavingProfile}
-                  onClick={() => void chooseCareerAndStart(career)}
-                  className="group rounded-xl border border-border bg-card p-5 text-left shadow-sm transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            <div className="mb-6 flex items-start gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <PenLineIcon className="h-5 w-5" />
+              </span>
+              <div>
+                <h3
+                  id="interests-heading"
+                  className="text-xl font-bold text-foreground"
                 >
-                  <div className="mb-4 flex items-center justify-between">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                      <BriefcaseIcon className="h-5 w-5" />
-                    </span>
-                    {isSavingProfile && selectedCareer?.id === career.id ? (
-                      <LoaderCircleIcon className="h-5 w-5 animate-spin text-primary" />
-                    ) : (
-                      <ArrowRightIcon className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
-                    )}
-                  </div>
-                  <h4 className="font-bold text-foreground">
-                    {career.label}
-                  </h4>
-                  <p className="mt-1 text-sm leading-5 text-muted-foreground">
-                    {career.description}
-                  </p>
-                </button>
-              ))}
+                  What area of physics interests you most?
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Tell us about your interests or career goals — we'll use
+                  this to personalize your quiz questions. This is optional.
+                </p>
+              </div>
+            </div>
+            <textarea
+              value={description}
+              onChange={(event) =>
+                setDescription(
+                  event.target.value.slice(0, DESCRIPTION_MAX_LENGTH),
+                )
+              }
+              rows={5}
+              placeholder="e.g. I'm fascinated by astrophysics and hope to work on space missions one day..."
+              className="w-full resize-none rounded-xl border border-border bg-card p-4 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            />
+            <p className="mt-1.5 text-right text-xs text-muted-foreground">
+              {description.length}/{DESCRIPTION_MAX_LENGTH}
+            </p>
+            <div className="mt-7 flex justify-end">
+              <button
+                type="button"
+                disabled={isSavingProfile}
+                onClick={() => void confirmProfile()}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                {isSavingProfile ? (
+                  <>
+                    <LoaderCircleIcon className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    Continue
+                    <ArrowRightIcon className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </div>
+          </section>
+        )}
+
+        {step === 'rules' && (
+          <section
+            className="mx-auto max-w-2xl"
+            aria-labelledby="rules-heading"
+          >
+            <button
+              type="button"
+              onClick={() => setStep('interests')}
+              className="mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <ArrowLeftIcon className="h-4 w-4" />
+              Edit interests
+            </button>
+            <div className="rounded-2xl border border-border bg-card p-6 text-center shadow-sm sm:p-10">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gold/20 text-primary">
+                <ListChecksIcon className="h-6 w-6" />
+              </span>
+              <p className="mt-5 text-xs font-bold uppercase tracking-[0.16em] text-primary">
+                Before you begin
+              </p>
+              <h3
+                id="rules-heading"
+                className="mt-2 text-2xl font-bold text-foreground"
+              >
+                Competition rules
+              </h3>
+              <ul className="mx-auto mt-7 max-w-md space-y-4 text-left text-sm text-foreground">
+                <li className="flex items-start gap-3">
+                  <ListChecksIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <span>
+                    You'll get up to {DAILY_QUESTION_LIMIT} personalized
+                    questions per day, generated from your selected modules.
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <ClockIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <span>
+                    Each question gives you {QUESTION_SECONDS} seconds to
+                    answer before it's marked as unanswered.
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <TargetIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <span>
+                    Correct answers earn points, and answering faster earns
+                    more. Wrong or missed answers earn none.
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <TrophyIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <span>
+                    Your total score is added to the department leaderboard.
+                  </span>
+                </li>
+              </ul>
+              <button
+                type="button"
+                onClick={startCompetition}
+                className="mx-auto mt-8 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                Start your competition
+                <ArrowRightIcon className="h-4 w-4" />
+              </button>
             </div>
           </section>
         )}
@@ -548,7 +743,7 @@ export function CompetitionPage() {
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
-                  {selectedCareer?.label}
+                  {studyYears.find((year) => year.value === selectedYear)?.label}
                 </p>
                 <p className="mt-1 text-sm font-medium text-muted-foreground">
                   Question {sessionStats.answered + 1} of today's{' '}
@@ -564,7 +759,7 @@ export function CompetitionPage() {
                 </div>
                 <div className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-bold text-foreground">
                   <span className="text-muted-foreground">Score </span>
-                  {sessionStats.correct} pts
+                  {sessionStats.score} pts
                 </div>
               </div>
             </div>
@@ -586,7 +781,7 @@ export function CompetitionPage() {
                     id="question-heading"
                     className="pt-1 text-xl font-bold leading-8 text-foreground"
                   >
-                    {currentQuestion.text}
+                    {currentQuestion.question}
                   </h3>
                 </div>
 
@@ -598,12 +793,12 @@ export function CompetitionPage() {
                   {currentQuestion.options.map((option, index) => {
                     const letter = String.fromCharCode(65 + index)
                     const chosen = selectedOption === index
-                    const isCorrectLetter =
+                    const isCorrectOption =
                       isSubmitted &&
-                      feedback?.correctAnswer &&
-                      feedback.correctAnswer === letter
+                      feedback !== null &&
+                      feedback.correctOptionIndex === index
                     const answerClass = isSubmitted
-                      ? isCorrectLetter
+                      ? isCorrectOption
                         ? 'border-green-600 bg-green-50 text-green-900 dark:bg-green-950/30 dark:text-green-100'
                         : chosen
                           ? 'border-destructive bg-destructive/5 text-foreground'
@@ -622,15 +817,15 @@ export function CompetitionPage() {
                         className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left text-sm font-medium transition-colors disabled:cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${answerClass}`}
                       >
                         <span
-                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${isCorrectLetter ? 'border-green-600 bg-green-600 text-white' : chosen ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground'}`}
+                          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${isCorrectOption ? 'border-green-600 bg-green-600 text-white' : chosen ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground'}`}
                         >
                           {letter}
                         </span>
                         <span>{option}</span>
-                        {isCorrectLetter && (
+                        {isCorrectOption && (
                           <CheckCircle2Icon className="ml-auto h-5 w-5 text-green-600" />
                         )}
-                        {isSubmitted && chosen && !isCorrectLetter && (
+                        {isSubmitted && chosen && !isCorrectOption && (
                           <XCircleIcon className="ml-auto h-5 w-5 text-destructive" />
                         )}
                       </button>
@@ -645,7 +840,7 @@ export function CompetitionPage() {
                   >
                     <p className="font-bold">
                       {feedback.correct
-                        ? 'Correct — +1 point'
+                        ? `Correct — +${feedback.scoreAwarded} pts`
                         : selectedOption === null
                           ? "Time's up"
                           : 'Not quite'}
@@ -669,7 +864,7 @@ export function CompetitionPage() {
                       disabled={selectedOption === null || isLoading}
                       className="rounded-lg bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
-                      Submit answer
+                      Check answer
                     </button>
                   ) : (
                     dailyRemaining > 0 && (
@@ -718,7 +913,7 @@ export function CompetitionPage() {
                   This session
                 </p>
                 <p className="mt-1 text-2xl font-bold text-foreground">
-                  {sessionStats.correct} <span className="text-sm">pts</span>
+                  {sessionStats.score} <span className="text-sm">pts</span>
                 </p>
               </div>
               <div className="p-5">

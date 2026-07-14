@@ -7,12 +7,6 @@ export interface PhysicsModule {
   name: string
 }
 
-export interface CareerPath {
-  id: string
-  label: string
-  description: string
-}
-
 export const PHYSICS_MODULES: Record<StudyYear, PhysicsModule[]> = {
   1: [
     { code: 'PHY 1032', name: 'Mechanics' },
@@ -58,164 +52,152 @@ export const PHYSICS_MODULES: Record<StudyYear, PhysicsModule[]> = {
   ],
 }
 
-export const CAREER_PATHS: CareerPath[] = [
-  {
-    id: 'research-physicist',
-    label: 'Research Physicist',
-    description: 'Great for academic passion',
-  },
-  {
-    id: 'medical-physicist',
-    label: 'Medical Physicist',
-    description: 'Apply physics to healthcare and diagnostics',
-  },
-  {
-    id: 'renewable-energy-engineer',
-    label: 'Renewable Energy Engineer',
-    description: 'Design and improve sustainable energy systems',
-  },
-  {
-    id: 'accelerator-particle-physicist',
-    label: 'Accelerator or Particle Physicist',
-    description: 'Explore the fundamental building blocks of matter',
-  },
-  {
-    id: 'space-aerospace-scientist',
-    label: 'Space Scientist / Aerospace Engineer',
-    description: 'Study and build for space and flight',
-  },
-  {
-    id: 'semiconductor-physicist',
-    label: 'Semiconductor Physicist',
-    description: 'Work on the materials behind modern electronics',
-  },
-  {
-    id: 'data-computational-physicist',
-    label: 'Data Scientist / Computational Physicist',
-    description: 'Model and simulate physical systems with data',
-  },
-]
-
 const MAX_SELECTABLE_MODULES = 5
 
 export interface SaveProfileRequest {
   year: StudyYear
   interestedModules: string[]
-  careerGoal: string
+  description?: string | null
 }
 
 export interface SaveProfileResult {
-  message: string
-  profileId: number
+  id: number
+  userId: number
+  studyYear: number
+  interestModules: string[]
+  description: string | null
 }
 
-interface SaveProfileResponseDto {
-  message: string
-  profile_id: number
+interface ProfileResponseDto {
+  id: number
+  user_id: number
+  study_year: number
+  interest_modules: string[]
+  description: string | null
 }
 
 export interface QuizQuestion {
   id: number
-  text: string
+  topic: string | null
+  question: string
   options: string[]
 }
 
-interface GenerateQuestionResponseDto {
-  question: {
-    id: number
-    text: string
-    options: string[]
-  }
+interface QuizQuestionDto {
+  id: number
+  topic: string | null
+  question: string
+  options: string[]
 }
 
 export interface AnswerSubmission {
-  questionId: number
-  selectedAnswer: string
-  timeTaken: number
+  quizId: number
+  selectedOptionIndex: number
+  timeTakenSeconds: number
 }
 
 export interface AnswerResult {
-  correct: boolean
-  correctAnswer: string
-  currentScore: number
+  quizId: number
+  isCorrect: boolean
+  correctOptionIndex: number
+  scoreAwarded: number
 }
 
 interface AnswerResponseDto {
-  correct: boolean
-  correct_answer: string
-  current_score: number
+  quiz_id: number
+  is_correct: boolean
+  correct_option_index: number
+  score_awarded: number
 }
 
 export interface LeaderboardEntry {
   rank: number
-  username: string
+  userId: number
+  displayName: string
   correctAnswers: number
   wrongAnswers: number
-  marks: number
+  score: number
 }
 
 interface LeaderboardEntryDto {
   rank: number
-  username: string
+  user_id: number
+  full_name: string | null
+  email: string
   correct_answers: number
   wrong_answers: number
-  marks: number
-}
-
-interface LeaderboardResponseDto {
-  leaderboard: LeaderboardEntryDto[]
+  total_time_seconds: number
+  score: number
 }
 
 const toLeaderboardEntry = (dto: LeaderboardEntryDto): LeaderboardEntry => ({
   rank: dto.rank,
-  username: dto.username,
+  userId: dto.user_id,
+  displayName: dto.full_name ?? dto.email,
   correctAnswers: dto.correct_answers,
   wrongAnswers: dto.wrong_answers,
-  marks: dto.marks,
+  score: dto.score,
 })
 
 export const competitionService = {
   maxSelectableModules: MAX_SELECTABLE_MODULES,
 
   async saveProfile(profile: SaveProfileRequest): Promise<SaveProfileResult> {
-    const result = await httpClient.post<SaveProfileResponseDto>('/profile', {
-      year: profile.year,
-      interested_modules: profile.interestedModules,
-      career_goal: profile.careerGoal,
+    const result = await httpClient.post<ProfileResponseDto>('/profile/', {
+      study_year: profile.year,
+      interest_modules: profile.interestedModules,
+      description: profile.description ?? null,
     })
-    return { message: result.message, profileId: result.profile_id }
+    return {
+      id: result.id,
+      userId: result.user_id,
+      studyYear: result.study_year,
+      interestModules: result.interest_modules,
+      description: result.description,
+    }
+  },
+
+  async getProfile(): Promise<SaveProfileResult> {
+    const result = await httpClient.get<ProfileResponseDto>('/profile/')
+    return {
+      id: result.id,
+      userId: result.user_id,
+      studyYear: result.study_year,
+      interestModules: result.interest_modules,
+      description: result.description,
+    }
   },
 
   async generateQuestion(): Promise<QuizQuestion> {
-    const result =
-      await httpClient.post<GenerateQuestionResponseDto>('/quiz/generate')
+    const result = await httpClient.post<QuizQuestionDto>('/quiz/generate')
     return {
-      id: result.question.id,
-      text: result.question.text,
-      options: result.question.options,
+      id: result.id,
+      topic: result.topic,
+      question: result.question,
+      options: result.options,
     }
   },
 
   async submitAnswer(submission: AnswerSubmission): Promise<AnswerResult> {
     const result = await httpClient.post<AnswerResponseDto>(
-      `/quiz/${submission.questionId}/answer`,
+      `/quiz/${submission.quizId}/answer`,
       {
-        question_id: submission.questionId,
-        selected_answer: submission.selectedAnswer,
-        time_taken: submission.timeTaken,
+        selected_option_index: submission.selectedOptionIndex,
+        time_taken_seconds: submission.timeTakenSeconds,
       },
     )
     return {
-      correct: result.correct,
-      correctAnswer: result.correct_answer,
-      currentScore: result.current_score,
+      quizId: result.quiz_id,
+      isCorrect: result.is_correct,
+      correctOptionIndex: result.correct_option_index,
+      scoreAwarded: result.score_awarded,
     }
   },
 
-  async getLeaderboard(limit = 50): Promise<LeaderboardEntry[]> {
-    const result = await httpClient.get<LeaderboardResponseDto>(
-      `/leaderboard?limit=${limit}`,
+  async getLeaderboard(): Promise<LeaderboardEntry[]> {
+    const result = await httpClient.get<LeaderboardEntryDto[]>(
+      '/leaderboard/',
     )
-    return result.leaderboard.map(toLeaderboardEntry)
+    return result.map(toLeaderboardEntry)
   },
 }

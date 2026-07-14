@@ -6,6 +6,7 @@ from models.user import User
 from schemas.auth import AuthResponse, GoogleSignInRequest, MessageResponse, UserRead
 from services.auth import (
     authenticate_with_google,
+    build_user_read,
     clear_session_cookie,
     get_current_user,
     revoke_current_session,
@@ -31,5 +32,5 @@ def logout(request: Request, response: Response):
 
 
 @router.get('/me', response_model=UserRead)
-def me(user: User = Depends(get_current_user)):
-    return UserRead.model_validate(user, from_attributes=True)
+def me(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return build_user_read(db, user)

@@ -14,6 +14,8 @@ class UserRead(BaseModel):
     full_name: str | None = None
     picture_url: str | None = None
     is_active: bool
+    has_completed_competition_onboarding: bool
+    competition_score: int
 
 
 class AuthResponse(BaseModel):

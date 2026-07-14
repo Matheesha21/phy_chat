@@ -7,6 +7,8 @@ export interface AuthUser {
   full_name: string | null;
   picture_url: string | null;
   is_active: boolean;
+  has_completed_competition_onboarding: boolean;
+  competition_score: number;
 }
 
 interface AuthResponse {

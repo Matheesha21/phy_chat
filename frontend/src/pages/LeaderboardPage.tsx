@@ -20,7 +20,7 @@ export function LeaderboardPage() {
   const loadLeaderboard = async () => {
     setStatus('loading')
     try {
-      setEntries(await competitionService.getLeaderboard(50))
+      setEntries(await competitionService.getLeaderboard())
       setStatus('ready')
     } catch {
       setStatus('error')
@@ -109,7 +109,7 @@ export function LeaderboardPage() {
             <ol>
               {entries.map((entry) => (
                 <li
-                  key={entry.rank}
+                  key={entry.userId}
                   className="grid grid-cols-[auto_1fr_auto] items-center gap-3 border-b border-border p-4 last:border-0 sm:grid-cols-[80px_1fr_90px_90px_105px] sm:gap-4 sm:px-5"
                 >
                   <div className="flex items-center gap-3">
@@ -124,7 +124,7 @@ export function LeaderboardPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-bold text-foreground">
-                      {entry.username}
+                      {entry.displayName}
                     </p>
                   </div>
                   <p className="hidden text-right text-sm text-muted-foreground sm:block">
@@ -134,7 +134,7 @@ export function LeaderboardPage() {
                     {entry.wrongAnswers}
                   </p>
                   <p className="text-right text-sm font-bold text-foreground">
-                    {entry.marks}{' '}
+                    {entry.score}{' '}
                     <span className="text-xs font-medium text-muted-foreground">
                       pts
                     </span>
