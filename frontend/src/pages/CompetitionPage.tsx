@@ -726,27 +726,12 @@ export function CompetitionPage() {
             className="mx-auto max-w-3xl"
             aria-labelledby="question-heading"
           >
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
-                  {studyYears.find((year) => year.value === selectedYear)?.label}
-                </p>
-                <p className="mt-1 text-sm font-medium text-muted-foreground">
-                  Question {sessionStats.answered + 1} of today's{' '}
-                  {DAILY_QUESTION_LIMIT} · {dailyRemaining} remaining today
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div
-                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-bold ${timeLeft <= 10 ? 'border-destructive text-destructive' : 'border-border text-foreground'}`}
-                >
-                  <TimerIcon className="h-4 w-4" />
-                  {timeLeft}s
-                </div>
-                <div className="rounded-lg border border-border bg-card px-3 py-2 text-sm font-bold text-foreground">
-                  <span className="text-muted-foreground">Score </span>
-                  {sessionStats.score} pts
-                </div>
+            <div className="mb-5 flex items-center justify-end">
+              <div
+                className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-bold ${timeLeft <= 10 ? 'border-destructive text-destructive' : 'border-border text-foreground'}`}
+              >
+                <TimerIcon className="h-4 w-4" />
+                {timeLeft}s
               </div>
             </div>
 
