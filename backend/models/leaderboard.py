@@ -13,6 +13,7 @@ class LeaderboardEntry(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), unique=True, nullable=False)
     correct_answers: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     wrong_answers: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    missed_answers: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     total_time_seconds: Mapped[float] = mapped_column(Float, default=0, nullable=False)
     score: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(

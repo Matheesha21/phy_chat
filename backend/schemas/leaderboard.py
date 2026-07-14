@@ -8,5 +8,6 @@ class LeaderboardEntryRead(BaseModel):
     email: str
     correct_answers: int
     wrong_answers: int
+    missed_answers: int
     total_time_seconds: float
     score: int

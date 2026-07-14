@@ -92,7 +92,7 @@ interface QuizQuestionDto {
 
 export interface AnswerSubmission {
   quizId: number
-  selectedOptionIndex: number
+  selectedOptionIndex: number | null
   timeTakenSeconds: number
 }
 
@@ -116,6 +116,7 @@ export interface LeaderboardEntry {
   displayName: string
   correctAnswers: number
   wrongAnswers: number
+  missedAnswers: number
   score: number
 }
 
@@ -126,6 +127,7 @@ interface LeaderboardEntryDto {
   email: string
   correct_answers: number
   wrong_answers: number
+  missed_answers: number
   total_time_seconds: number
   score: number
 }
@@ -136,6 +138,7 @@ const toLeaderboardEntry = (dto: LeaderboardEntryDto): LeaderboardEntry => ({
   displayName: dto.full_name ?? dto.email,
   correctAnswers: dto.correct_answers,
   wrongAnswers: dto.wrong_answers,
+  missedAnswers: dto.missed_answers,
   score: dto.score,
 })
 

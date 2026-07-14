@@ -54,7 +54,7 @@ export const ChatWindow: React.FC = () => {
         <div ref={bottomRef} />
       </div>
 
-      {messages.length === 1 && (
+      {messages.length === 0 && (
         <div className="px-4 pb-4 max-w-4xl mx-auto w-full">
           <p className="text-xs text-muted-foreground mb-3 font-medium uppercase tracking-wider">
             Suggested Queries

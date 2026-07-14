@@ -77,8 +77,9 @@ def submit_answer(db: Session, user_id: int, quiz_id: int, payload: QuizAnswerRe
     if quiz.answered_at is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='This quiz question has already been answered')
 
+    is_missed = payload.selected_option_index is None
     is_correct = payload.selected_option_index == quiz.correct_option_index
-    score_awarded = score_for_answer(is_correct, payload.time_taken_seconds)
+    score_awarded = score_for_answer(is_correct, is_missed, payload.time_taken_seconds)
 
     quiz.selected_option_index = payload.selected_option_index
     quiz.is_correct = is_correct
@@ -86,7 +87,7 @@ def submit_answer(db: Session, user_id: int, quiz_id: int, payload: QuizAnswerRe
     quiz.answered_at = datetime.now(UTC)
     db.commit()
 
-    record_answer(db, user_id, is_correct, payload.time_taken_seconds, score_awarded)
+    record_answer(db, user_id, is_correct, is_missed, payload.time_taken_seconds, score_awarded)
 
     return QuizAnswerResponse(
         quiz_id=quiz.id,

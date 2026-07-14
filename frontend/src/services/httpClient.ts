@@ -48,5 +48,6 @@ export const httpClient = {
     request<T>(path, {
       method: 'POST',
       body: data === undefined ? undefined : JSON.stringify(data)
-    })
+    }),
+  del: <T,>(path: string): Promise<T> => request<T>(path, { method: 'DELETE' })
 };

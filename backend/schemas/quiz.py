@@ -18,7 +18,7 @@ class QuizQuestionRead(BaseModel):
 
 
 class QuizAnswerRequest(BaseModel):
-    selected_option_index: int = Field(ge=0, le=3)
+    selected_option_index: int | None = Field(default=None, ge=0, le=3)
     time_taken_seconds: float = Field(ge=0)
 
 
