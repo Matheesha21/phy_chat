@@ -79,7 +79,7 @@ def submit_answer(db: Session, user_id: int, quiz_id: int, payload: QuizAnswerRe
 
     is_missed = payload.selected_option_index is None
     is_correct = payload.selected_option_index == quiz.correct_option_index
-    score_awarded = score_for_answer(is_correct, payload.time_taken_seconds)
+    score_awarded = score_for_answer(is_correct, is_missed, payload.time_taken_seconds)
 
     quiz.selected_option_index = payload.selected_option_index
     quiz.is_correct = is_correct

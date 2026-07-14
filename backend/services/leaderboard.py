@@ -7,14 +7,26 @@ from models.leaderboard import LeaderboardEntry
 from models.user import User
 from schemas.leaderboard import LeaderboardEntryRead
 
-CORRECT_BASE_SCORE = 100
-MIN_CORRECT_SCORE = 10
+QUESTION_SECONDS = 30
+CORRECT_BASE_SCORE = 10
+WRONG_SCORE = -5
+MISSED_SCORE = -3
 
 
-def score_for_answer(is_correct: bool, time_taken_seconds: float) -> int:
+def score_for_answer(is_correct: bool, is_missed: bool, time_taken_seconds: float) -> int:
+    if is_missed:
+        return MISSED_SCORE
     if not is_correct:
-        return 0
-    return max(MIN_CORRECT_SCORE, CORRECT_BASE_SCORE - int(round(time_taken_seconds)))
+        return WRONG_SCORE
+
+    time_left = max(0.0, QUESTION_SECONDS - time_taken_seconds)
+    if time_left >= 20:
+        speed_bonus = 3
+    elif time_left >= 10:
+        speed_bonus = 2
+    else:
+        speed_bonus = 1
+    return CORRECT_BASE_SCORE + speed_bonus
 
 
 def _get_or_create_entry(db: Session, user_id: int) -> LeaderboardEntry:
