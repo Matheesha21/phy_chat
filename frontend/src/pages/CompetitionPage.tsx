@@ -41,38 +41,10 @@ interface CompetitionScreenState {
 }
 
 const QUESTION_SECONDS = 30
-const DAILY_QUESTION_LIMIT = 10
-const DAILY_LIMIT_STORAGE_KEY = 'phy_chat_quiz_daily'
 const DESCRIPTION_MAX_LENGTH = 500
 
 function moduleLabel(module: PhysicsModule): string {
   return `${module.code} ${module.name}`
-}
-
-function todayKey(): string {
-  return new Date().toISOString().slice(0, 10)
-}
-
-function readDailyCount(): number {
-  try {
-    const raw = localStorage.getItem(DAILY_LIMIT_STORAGE_KEY)
-    if (!raw) return 0
-    const parsed = JSON.parse(raw) as { date: string; count: number }
-    return parsed.date === todayKey() ? parsed.count : 0
-  } catch {
-    return 0
-  }
-}
-
-function writeDailyCount(count: number) {
-  try {
-    localStorage.setItem(
-      DAILY_LIMIT_STORAGE_KEY,
-      JSON.stringify({ date: todayKey(), count }),
-    )
-  } catch {
-    // ignore storage failures (e.g. private browsing)
-  }
 }
 
 const studyYears: {
@@ -133,9 +105,6 @@ export function CompetitionPage() {
   const [selectedModules, setSelectedModules] = useState<string[]>([])
   const [description, setDescription] = useState('')
   const [isSavingProfile, setIsSavingProfile] = useState(false)
-
-  const [dailyCount, setDailyCount] = useState(readDailyCount)
-  const dailyRemaining = Math.max(0, DAILY_QUESTION_LIMIT - dailyCount)
 
   const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion | null>(
     null,
@@ -299,17 +268,11 @@ export function CompetitionPage() {
   }
 
   const applyAnswerOutcome = (correct: boolean, scoreAwarded: number) => {
-    const nextDailyCount = dailyCount + 1
-    setDailyCount(nextDailyCount)
-    writeDailyCount(nextDailyCount)
     setSessionStats((previous) => ({
       answered: previous.answered + 1,
       correct: previous.correct + (correct ? 1 : 0),
       score: previous.score + scoreAwarded,
     }))
-    if (nextDailyCount >= DAILY_QUESTION_LIMIT) {
-      setTimeout(() => setStep('complete'), 1500)
-    }
   }
 
   const submitAnswer = async () => {
@@ -341,14 +304,6 @@ export function CompetitionPage() {
     setIsSubmitted(true)
     setFeedback({ correct: false, correctOptionIndex: -1, scoreAwarded: 0 })
     applyAnswerOutcome(false, 0)
-  }
-
-  const nextQuestion = () => {
-    if (dailyRemaining <= 0) {
-      setStep('complete')
-      return
-    }
-    void fetchNextQuestion()
   }
 
   const resetCompetition = () => {
@@ -434,13 +389,6 @@ export function CompetitionPage() {
               )
             })}
           </ol>
-        )}
-
-        {dailyRemaining <= 0 && step !== 'complete' && (
-          <div className="mb-6 rounded-xl border border-gold/40 bg-gold/10 p-4 text-sm font-semibold text-foreground">
-            You've reached today's limit of {DAILY_QUESTION_LIMIT} questions.
-            Come back tomorrow for more.
-          </div>
         )}
 
         {step === 'returning' && (
@@ -685,8 +633,8 @@ export function CompetitionPage() {
                 <li className="flex items-start gap-3">
                   <ListChecksIcon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                   <span>
-                    You'll get up to {DAILY_QUESTION_LIMIT} personalized
-                    questions per day, generated from your selected modules.
+                    You'll get personalized questions generated from your
+                    selected modules, for as long as you keep going.
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
@@ -722,7 +670,7 @@ export function CompetitionPage() {
           </section>
         )}
 
-        {step === 'quiz' && dailyRemaining > 0 && (
+        {step === 'quiz' && (
           <section
             className="mx-auto max-w-3xl"
             aria-labelledby="question-heading"
@@ -831,17 +779,15 @@ export function CompetitionPage() {
                       Check answer
                     </button>
                   ) : (
-                    dailyRemaining > 0 && (
-                      <button
-                        type="button"
-                        onClick={nextQuestion}
-                        disabled={isLoading}
-                        className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                      >
-                        Next question
-                        <ArrowRightIcon className="h-4 w-4" />
-                      </button>
-                    )
+                    <button
+                      type="button"
+                      onClick={() => void fetchNextQuestion()}
+                      disabled={isLoading}
+                      className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      Next question
+                      <ArrowRightIcon className="h-4 w-4" />
+                    </button>
                   )}
                 </div>
               </div>
@@ -868,8 +814,7 @@ export function CompetitionPage() {
             </h3>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
               You answered {sessionStats.answered} question
-              {sessionStats.answered === 1 ? '' : 's'} today, {dailyCount}/
-              {DAILY_QUESTION_LIMIT} of today's limit used.
+              {sessionStats.answered === 1 ? '' : 's'} this session.
             </p>
             <div className="my-8 grid grid-cols-2 divide-x divide-border overflow-hidden rounded-xl border border-border text-left">
               <div className="p-5">
@@ -882,26 +827,24 @@ export function CompetitionPage() {
               </div>
               <div className="p-5">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Questions today
+                  Correct answers
                 </p>
                 <p className="mt-1 text-2xl font-bold text-foreground">
-                  {dailyCount}/{DAILY_QUESTION_LIMIT}
+                  {sessionStats.correct}/{sessionStats.answered}
                 </p>
               </div>
             </div>
             <div className="flex flex-col justify-center gap-3 sm:flex-row">
-              {dailyRemaining > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep('quiz')
-                    void fetchNextQuestion()
-                  }}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  <RotateCcwIcon className="h-4 w-4" /> Keep going
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setStep('quiz')
+                  void fetchNextQuestion()
+                }}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <RotateCcwIcon className="h-4 w-4" /> Keep going
+              </button>
               <button
                 type="button"
                 onClick={resetCompetition}
