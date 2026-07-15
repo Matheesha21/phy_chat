@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { ChatMessage } from '../../services/chatService';
 import { cn } from '../Layout/Sidebar';
 import { Bot, User } from 'lucide-react';
@@ -74,7 +76,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.text}</p>
         ) : (
           <div className="text-sm">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+              components={markdownComponents}>
               {message.text}
             </ReactMarkdown>
           </div>

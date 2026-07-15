@@ -78,3 +78,14 @@
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-muted-foreground/50;
 }
+
+/* KaTeX math rendering in chat messages */
+.katex-display {
+  margin: 0.5rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.125rem 0;
+}
+.katex {
+  font-size: 1.05em;
+}
