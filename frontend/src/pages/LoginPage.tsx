@@ -71,8 +71,8 @@ export const LoginPage: React.FC = () => {
 
         </div>
 
-        <p className="font-sans font-bold text-sm text-[#0f2a5c] dark:text-[#6f93d9]">
-          Design by <span className="font-display font-bold text-[0.9375rem] not-italic">Elvion Labs</span>
+        <p className="text-xs text-muted-foreground text-center">
+          Designed by <span className="font-bold">Elvion Labs</span>
         </p>
 
         <p className="text-xs text-muted-foreground text-center">

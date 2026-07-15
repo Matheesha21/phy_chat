@@ -88,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
 
           <div className="p-4 border-t border-border">
             <div className="text-xs text-muted-foreground text-center">
-              © 2026 USJ Physics Dept.
+              Designed by <span className="font-bold">Elvion Labs</span>
             </div>
           </div>
         </div>
