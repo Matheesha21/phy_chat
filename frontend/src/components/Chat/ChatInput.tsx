@@ -17,8 +17,8 @@ export const ChatInput: React.FC = () => {
     }
   }
   return (
-    <div className="p-4 bg-card border-t border-border">
-      <div className="max-w-4xl mx-auto relative flex items-center">
+    <div className="px-4 py-4 md:px-8 lg:px-12 bg-card border-t border-border">
+      <div className="w-full relative flex items-center">
         <input
           type="text"
           value={input}
@@ -26,7 +26,8 @@ export const ChatInput: React.FC = () => {
           onKeyDown={handleKeyDown}
           placeholder="Ask about physics concepts, formulas, or problem solving..."
           disabled={isLoading}
-          className="w-full pl-4 pr-12 py-3.5 bg-secondary border-transparent rounded-xl focus:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm disabled:opacity-50"
+          autoComplete="off"
+          className="w-full pl-4 pr-12 py-3.5 bg-background border border-border rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm disabled:opacity-50"
         />
         <button
           onClick={handleSend}

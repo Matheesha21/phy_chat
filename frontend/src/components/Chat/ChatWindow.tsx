@@ -18,8 +18,8 @@ export const ChatWindow: React.FC = () => {
     'Study tips for electricity',
   ]
   return (
-    <div className="flex flex-col h-full w-full max-w-5xl mx-auto bg-background">
-      <div className="flex-1 overflow-y-auto p-4 md:p-6">
+    <div className="flex flex-col h-full w-full bg-background">
+      <div className="flex-1 overflow-y-auto px-4 py-4 md:px-8 md:py-6 lg:px-12">
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
@@ -55,7 +55,7 @@ export const ChatWindow: React.FC = () => {
       </div>
 
       {messages.length === 0 && (
-        <div className="px-4 pb-4 max-w-4xl mx-auto w-full">
+        <div className="px-4 pb-4 md:px-8 lg:px-12 w-full">
           <p className="text-xs text-muted-foreground mb-3 font-medium uppercase tracking-wider">
             Suggested Queries
           </p>

@@ -10,10 +10,10 @@ export const ChatPage: React.FC = () => {
       <div className="bg-card border-b border-border px-6 py-4 flex-shrink-0 flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-foreground">
-            AI Physics Assistant
+            USJ Physics Assistant
           </h2>
           <p className="text-sm text-muted-foreground">
-            Get clear explanations, formulas, and study support for physics.
+            Ask about physics concepts, formulas, courses, or the Department of Physics.
           </p>
         </div>
         <button
