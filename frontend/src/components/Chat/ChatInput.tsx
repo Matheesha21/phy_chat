@@ -18,7 +18,7 @@ export const ChatInput: React.FC = () => {
   }
   return (
     <div className="px-4 py-4 md:px-8 lg:px-12 bg-card border-t border-border">
-      <div className="w-full relative flex items-center">
+      <div className="max-w-4xl mx-auto relative flex items-center">
         <input
           type="text"
           value={input}
