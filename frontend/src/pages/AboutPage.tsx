@@ -15,9 +15,9 @@ export const AboutPage: React.FC = () => {
   },
   {
     icon: Database,
-    title: 'Real-time Department Data',
+    title: 'Vector Knowledge Base',
     description:
-    'Integrated with the department database to provide up-to-date information on schedules and staff.'
+    'AI-powered semantic search over official Department of Physics resources, providing reliable and relevant answers from indexed content.'
   },
   {
     icon: GraduationCap,
