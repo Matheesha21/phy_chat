@@ -70,7 +70,9 @@ def _to_langchain_messages(history: list[ChatMessage], message: str, context_chu
 
 def get_chat_history(db: Session, user_id: int) -> list[ChatMessageRead]:
     rows = db.scalars(
-        select(ChatMessage).where(ChatMessage.user_id == user_id).order_by(ChatMessage.created_at)
+        select(ChatMessage)
+        .where(ChatMessage.user_id == user_id)
+        .order_by(ChatMessage.created_at, ChatMessage.id)
     ).all()
     return [ChatMessageRead(id=row.id, role=row.role, message=row.message, created_at=row.created_at) for row in rows]
 
@@ -98,7 +100,7 @@ def generate_reply(db: Session, user_id: int, message: str) -> ChatResponse:
     history = db.scalars(
         select(ChatMessage)
         .where(ChatMessage.user_id == user_id)
-        .order_by(ChatMessage.created_at.desc())
+        .order_by(ChatMessage.created_at.desc(), ChatMessage.id.desc())
         .limit(CONTEXT_MESSAGE_LIMIT)
     ).all()
     history = list(reversed(history))
