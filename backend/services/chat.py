@@ -40,6 +40,20 @@ def clear_chat_history(db: Session, user_id: int) -> None:
     db.commit()
 
 
+def _extract_text(content) -> str:
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if isinstance(block, str):
+                parts.append(block)
+            elif isinstance(block, dict) and block.get('type') == 'text':
+                parts.append(block.get('text', ''))
+        return ''.join(parts)
+    return str(content)
+
+
 def generate_reply(db: Session, user_id: int, message: str) -> ChatResponse:
     history = db.scalars(
         select(ChatMessage)
@@ -58,7 +72,7 @@ def generate_reply(db: Session, user_id: int, message: str) -> ChatResponse:
             detail='Failed to get a response from the chat model',
         ) from exc
 
-    reply = result.content
+    reply = _extract_text(result.content)
     db.add(ChatMessage(user_id=user_id, role='user', message=message))
     db.add(ChatMessage(user_id=user_id, role='assistant', message=reply))
     db.commit()

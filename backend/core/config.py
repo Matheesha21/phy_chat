@@ -67,7 +67,7 @@ def get_google_api_key() -> str:
 
 
 def get_gemini_model() -> str:
-    return get_env('GEMINI_MODEL', 'gemini-2.5-flash') or 'gemini-2.5-flash'
+    return get_env('GEMINI_MODEL', 'gemini-3.1-flash-lite') or 'gemini-3.1-flash-lite'
 
 
 def get_cors_origins() -> list[str]:
