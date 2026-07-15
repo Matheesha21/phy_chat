@@ -4,19 +4,13 @@ import { MessageBubble } from './MessageBubble'
 import { ChatInput } from './ChatInput'
 import { Sparkles } from 'lucide-react'
 export const ChatWindow: React.FC = () => {
-  const { messages, isLoading, sendMessage } = useChat()
+  const { messages, isLoading } = useChat()
   const bottomRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
       behavior: 'smooth',
     })
   }, [messages, isLoading])
-  const quickActions = [
-    "Explain Newton's laws",
-    'Physics formulas',
-    'How does a capacitor work?',
-    'Study tips for electricity',
-  ]
   return (
     <div className="flex flex-col h-full w-full bg-background">
       <div className="flex-1 overflow-y-auto px-4 py-4 md:px-8 md:py-6 lg:px-12">
@@ -53,25 +47,6 @@ export const ChatWindow: React.FC = () => {
         )}
         <div ref={bottomRef} />
       </div>
-
-      {messages.length === 0 && (
-        <div className="px-4 pb-4 md:px-8 lg:px-12 w-full">
-          <p className="text-xs text-muted-foreground mb-3 font-medium uppercase tracking-wider">
-            Suggested Queries
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {quickActions.map((action) => (
-              <button
-                key={action}
-                onClick={() => sendMessage(action)}
-                className="px-4 py-2 bg-card border border-border rounded-full text-sm font-medium text-foreground hover:border-primary hover:text-primary transition-colors shadow-sm"
-              >
-                {action}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       <ChatInput />
     </div>
