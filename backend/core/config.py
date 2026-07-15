@@ -70,6 +70,10 @@ def get_gemini_model() -> str:
     return get_env('GEMINI_MODEL', 'gemini-2.5-flash') or 'gemini-2.5-flash'
 
 
+def get_embedding_model() -> str:
+    return get_env('EMBEDDING_MODEL', 'models/gemini-embedding-001') or 'models/gemini-embedding-001'
+
+
 def get_cors_origins() -> list[str]:
     raw_origins = get_env('CORS_ORIGINS', 'http://localhost:5173') or 'http://localhost:5173'
     return [origin.strip() for origin in raw_origins.split(',') if origin.strip()]
