@@ -1,19 +1,23 @@
 import React, { useEffect, useRef } from 'react'
 import { useChat } from '../../context/ChatContext'
 import { MessageBubble } from './MessageBubble'
+import { ChatEmptyState } from './ChatEmptyState'
 import { ChatInput } from './ChatInput'
 import { Sparkles } from 'lucide-react'
 export const ChatWindow: React.FC = () => {
-  const { messages, isLoading } = useChat()
+  const { messages, isLoading, isHistoryLoading } = useChat()
   const bottomRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
       behavior: 'smooth',
     })
   }, [messages, isLoading])
+  const isEmpty = !isHistoryLoading && messages.length === 0 && !isLoading
   return (
     <div className="flex flex-col h-full w-full bg-background">
       <div className="flex-1 overflow-y-auto px-4 py-4 md:px-8 md:py-6 lg:px-12">
+        {isEmpty && <ChatEmptyState />}
+
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
