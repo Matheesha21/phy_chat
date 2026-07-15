@@ -10,3 +10,4 @@ google-auth
 requests
 langchain-core
 langchain-google-genai
+pypdf

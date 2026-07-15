@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from core.config import get_gemini_model, get_google_api_key
 from models.chat import ChatMessage
 from schemas.chat import ChatMessageRead, ChatResponse
+from services.rag import retrieve_relevant_chunks
 
 
 SYSTEM_PROMPT = 'You are a helpful AI assistant for the Physics Department chat application. Answer clearly and concisely.'
@@ -17,8 +18,20 @@ def _build_llm() -> ChatGoogleGenerativeAI:
     return ChatGoogleGenerativeAI(model=get_gemini_model(), google_api_key=get_google_api_key())
 
 
-def _to_langchain_messages(history: list[ChatMessage], message: str) -> list:
-    messages = [SystemMessage(content=SYSTEM_PROMPT)]
+def _build_system_prompt(context_chunks: list[str]) -> str:
+    if not context_chunks:
+        return SYSTEM_PROMPT
+    context = '\n\n---\n\n'.join(context_chunks)
+    return (
+        f'{SYSTEM_PROMPT}\n\n'
+        'Use the following context about the Physics Department if it is relevant to the question. '
+        "If the context doesn't contain the answer, say you don't know rather than guessing.\n\n"
+        f'Context:\n{context}'
+    )
+
+
+def _to_langchain_messages(history: list[ChatMessage], message: str, context_chunks: list[str]) -> list:
+    messages = [SystemMessage(content=_build_system_prompt(context_chunks))]
     for item in history:
         if item.role == 'user':
             messages.append(HumanMessage(content=item.message))
@@ -65,7 +78,8 @@ def generate_reply(db: Session, user_id: int, message: str) -> ChatResponse:
 
     llm = _build_llm()
     try:
-        result = llm.invoke(_to_langchain_messages(history, message))
+        context_chunks = retrieve_relevant_chunks(db, message)
+        result = llm.invoke(_to_langchain_messages(history, message, context_chunks))
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,

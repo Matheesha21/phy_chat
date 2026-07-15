@@ -60,6 +60,7 @@ COOKIE_SECURE=false
 ALLOWED_EMAIL_DOMAIN=sjb.mrt.ac.lk
 GOOGLE_API_KEY=your_gemini_api_key
 GEMINI_MODEL=gemini-2.5-flash
+EMBEDDING_MODEL=models/gemini-embedding-001
 CORS_ORIGINS=http://localhost:5173
 ```
 
@@ -68,6 +69,16 @@ Run database migrations:
 ```bash
 alembic upgrade head
 ```
+
+## RAG (Retrieval-Augmented Generation)
+
+The chat assistant retrieves relevant context from ingested documents before answering. Drop `.md`, `.txt`, or `.pdf` files into `backend/data/` and run:
+
+```bash
+python scripts/ingest.py
+```
+
+This chunks each file, embeds the chunks with `EMBEDDING_MODEL`, and stores them in the `document_chunks` table. Re-run it any time the source documents change (it replaces existing chunks for a given filename). `services/chat.py` embeds each incoming user message, retrieves the top matching chunks, and injects them into the system prompt before calling Gemini.
 
 ## Run
 
